@@ -30,6 +30,12 @@ def render_patch(engine, midi_note, midi_velocity, note_length, render_length) -
     engine.render_patch(midi_note, midi_velocity, note_length, render_length)
 
 
+def plot_audio(audio) -> None:
+    plt.plot(audio)
+    plt.xlabel('Time (frame count)')
+    plt.show()
+
+
 def main() -> None:
     num_trials = 10
     engine, generator = setup_serum(SERUM_PATH)
@@ -40,15 +46,13 @@ def main() -> None:
 
         midi_note = 40
         midi_velocity = 127
-        note_length = 2.0
-        render_length = 2.0
+        note_length = 3.0
+        render_length = 4.0
 
         render_patch(engine, midi_note, midi_velocity, note_length, render_length)
         audio = engine.get_audio_frames()
 
-        # plt.plot(audio)
-        # plt.xlabel('Time (frame count)')
-        # plt.show()
+        plot_audio(audio)
 
 
 if __name__ == '__main__':
