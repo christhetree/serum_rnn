@@ -15,7 +15,8 @@ def setup_serum(path):
 
 engine, generator = setup_serum(SERUM_PATH)
 print(engine.get_plugin_parameters_description())
-engine.load_preset('/Users/christhetree/local_christhetree/research/titech/audio/RenderMan/Builds/MacOSX/build/Debug/angle_grinder.fxp')
+engine.load_preset('/Users/christhetree/local_christhetree/audio_research/lib/RenderMan/Builds/MacOSX/build/Debug/angle_grinder.fxp')
+engine.set_parameter(0, 0.1)
 
 midi_note = 40
 midi_velocity = 127
@@ -25,3 +26,7 @@ render_length = 4.0
 
 engine.render_patch(midi_note, midi_velocity, note_length, render_length, False)
 audio = engine.get_audio_frames()
+
+save_result = engine.save_preset('/Users/christhetree/local_christhetree/audio_research/lib/RenderMan/Builds/MacOSX/build/Debug/derp6.fxp')
+print(save_result)
+print('After saving')
