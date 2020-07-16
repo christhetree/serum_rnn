@@ -1,22 +1,92 @@
 from typing import List, Dict, Any
 
 import tensorflow as tf
+import tensorflow.keras.backend as K
 from tensorflow.keras import Model
+from tensorflow.keras.layers import Input, Dense, Flatten, MaxPooling2D, \
+    Conv2D, Dropout, Bidirectional, Permute, Lambda, Conv1D, LSTM
 from tensorflow.keras.losses import sparse_categorical_crossentropy
 from tensorflow.keras.metrics import sparse_categorical_accuracy
 from tensorflow.python.framework.ops import Tensor
 
 
-class TriosVAE(Model):
+def build_cnn3_classifier(
+        mel_spec_x: int = 128,
+        mel_spec_y: int = 131,
+        n_class: int = 3,
+        dropout_rate: float = 0.50) -> Model:
+    input_img = Input(shape=(mel_spec_x, mel_spec_y, 1))
+    x = Conv2D(32,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(input_img)
+    x = MaxPooling2D((4, 4))(x)
+    x = Conv2D(64,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((4, 4))(x)
+    x = Conv2D(64,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((4, 4))(x)
+    x = Flatten()(x)
+    x = Dense(128, activation='elu')(x)
+    x = Dropout(dropout_rate)(x)
+    x = Dense(n_class, activation='linear')(x)
+    model = Model(input_img, x)
+    return model
+
+
+def build_lstm_classifier(
+        mel_spec_x: int = 128,
+        mel_ts: int = 128,
+        n_class: int = 9,
+        dropout_rate: float = 0.50,
+        lstm_dim: int = 128,
+        fc_dim: int = 128) -> Model:
+    input_img = Input(shape=(mel_spec_x, mel_ts, 1))
+    x = Lambda(lambda t: K.squeeze(t, axis=-1))(input_img)
+    x = Permute((2, 1))(x)
+    x = Bidirectional(LSTM(lstm_dim))(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    x = Dropout(dropout_rate)(x)
+    x = Dense(n_class, activation='softmax')(x)
+    model = Model(input_img, x)
+    return model
+
+
+def build_cnn_lstm_classifier(
+        mel_spec_x: int = 128,
+        mel_ts: int = 128,
+        n_class: int = 9,
+        dropout_rate: float = 0.50,
+        lstm_dim: int = 128,
+        fc_dim: int = 128) -> Model:
+    input_img = Input(shape=(mel_spec_x, mel_ts, 1))
+    x = Lambda(lambda t: K.squeeze(t, axis=-1))(input_img)
+    x = Permute((2, 1))(x)
+    x = Conv1D(64,
+               3,
+               strides=1,
+               padding='same',
+               activation='elu')(x)
+    x = Bidirectional(LSTM(lstm_dim))(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    x = Dropout(dropout_rate)(x)
+    x = Dense(n_class, activation='softmax')(x)
+    model = Model(input_img, x)
+    return model
+
+
+class MLPBaseline(Model):
     def __init__(self,
-                 enc: Model,
-                 dec: Model,
-                 is_conditional: bool,
                  **kwargs: Any) -> None:
-        super(TriosVAE, self).__init__(**kwargs)
-        self.enc = enc
-        self.dec = dec
-        self.is_conditional = is_conditional
+        super(MLPBaseline, self).__init__(**kwargs)
 
     def call(self, inputs: List[Tensor]) -> List[Tensor]:
         z_mean, z_log_var, z = self.enc(inputs)

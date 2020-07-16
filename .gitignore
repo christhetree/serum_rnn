@@ -269,8 +269,7 @@ fabric.properties
 # User added
 data/vst/
 data/datasets/
+data/presets/sample_lib/
 out/
 .idea/
 .virt/
-scratch.py
-scratch.ipynb
