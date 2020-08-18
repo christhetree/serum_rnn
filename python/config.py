@@ -15,6 +15,7 @@ VST_DIR = os.path.join(DATA_DIR, 'vst')
 DATASETS_DIR = os.path.join(DATA_DIR, 'datasets')
 
 SERUM_PATH = os.path.join(VST_DIR, 'Serum.vst')
+DEFAULT_SERUM_PRESET_PATH = os.path.join(PRESETS_DIR, 'default.fxp')
 log.info(f'Serum path: {SERUM_PATH}')
 
 # Renderman
@@ -23,14 +24,14 @@ RM_BUFFER_SIZE = 512
 RM_FFT_SIZE = 512
 
 # Audio rendering
-NOTE_LENGTH = 1.5
-RENDER_LENGTH = 1.5
+NOTE_LENGTH = 1.0
+RENDER_LENGTH = 1.0
 
 # Mel spec
 MEL_SR = RM_SR
-HOP_LENGTH = 512
-N_MELS = 128
-N_FFT = 2048
+HOP_LENGTH = 256
+N_MELS = 256
+N_FFT = 4096
 MEL_MAX_DUR = 3.0
 
 # Default param values

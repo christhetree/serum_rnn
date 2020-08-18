@@ -5,8 +5,10 @@ from typing import Optional
 import librosa as lr
 import numpy as np
 from scipy.signal import butter, lfilter
+from tqdm import tqdm
 
-from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, MEL_MAX_DUR
+from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, MEL_MAX_DUR, \
+    DATASETS_DIR, RM_SR
 
 logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO'))
 log = logging.getLogger(__name__)
@@ -86,3 +88,25 @@ def add_noise(y: np.ndarray,
         output = lr.util.normalize(output)
 
     return output
+
+
+if __name__ == '__main__':
+    data_path = os.path.join(DATASETS_DIR, 'renders_10k_testing_midi.npz')
+    data = np.load(data_path)
+    renders = data['renders']
+    params = data['params']
+    mels = []
+    print(renders.shape)
+    print(params.shape)
+
+    for render in tqdm(renders):
+        mel = get_mel_spec(render,
+                           sr=RM_SR,
+                           max_len_samples=44544,
+                           normalize_audio=True,
+                           normalize_mel=True)
+        mels.append(mel)
+
+    mels = np.array(mels, dtype=np.float32)
+    print(mels.shape)
+    np.savez('../data/datasets/mels_10k_testing_midi.npz', mels=mels, params=params)

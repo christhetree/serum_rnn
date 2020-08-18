@@ -1,20 +1,28 @@
+import os
 from typing import List, Dict, Any
 
+import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Dense, Flatten, MaxPooling2D, \
-    Conv2D, Dropout, Bidirectional, Permute, Lambda, Conv1D, LSTM
+    Conv2D, Dropout, Bidirectional, Permute, Lambda, Conv1D, LSTM, Concatenate
 from tensorflow.keras.losses import sparse_categorical_crossentropy
 from tensorflow.keras.metrics import sparse_categorical_accuracy
 from tensorflow.python.framework.ops import Tensor
+from tensorflow.python.keras.utils.np_utils import to_categorical
+
+from python.config import DATASETS_DIR
 
 
 def build_cnn3_classifier(
         mel_spec_x: int = 128,
         mel_spec_y: int = 131,
-        n_class: int = 3,
+        n_reg: int = 1,
+        n_class: int = 14,
+        n_midi: int = 86,
         dropout_rate: float = 0.50) -> Model:
+    input_midi = Input(shape=(n_midi,))
     input_img = Input(shape=(mel_spec_x, mel_spec_y, 1))
     x = Conv2D(32,
                (3, 3),
@@ -35,10 +43,12 @@ def build_cnn3_classifier(
                activation='elu')(x)
     x = MaxPooling2D((4, 4))(x)
     x = Flatten()(x)
+    x = Concatenate()([x, input_midi])
     x = Dense(128, activation='elu')(x)
     x = Dropout(dropout_rate)(x)
-    x = Dense(n_class, activation='linear')(x)
-    model = Model(input_img, x)
+    reg_output = Dense(n_reg, activation='linear')(x)
+    class_output = Dense(n_class, activation='softmax')(x)
+    model = Model([input_img, input_midi], [reg_output, class_output])
     return model
 
 
@@ -198,3 +208,38 @@ class MLPBaseline(Model):
             'b_rec_acc': bass_rec_acc,
             'd_rec_acc': drums_rec_acc,
         }
+
+
+if __name__ == '__main__':
+    data_path = os.path.join(DATASETS_DIR, 'mels_10k_testing_midi.npz')
+    data = np.load(data_path)
+    mels = data['mels']
+    params = data['params']
+    print(mels.shape)
+    print(mels.dtype)
+    print(params.shape)
+    print(params.dtype)
+    x = np.expand_dims(mels, axis=-1)
+    x_midi = params[:, 4:5]
+    x_midi = to_categorical(x_midi, num_classes=86)
+    y_reg = params[:, 1:2].astype(np.float32) / 100
+    y_class = (params[:, 1:2].astype(np.float32) / 100) * 13
+    y_class += 0.5
+    y_class = y_class.astype(np.int32)
+    print(x.shape)
+    print(x.dtype)
+    print(x_midi.shape)
+    print(x_midi.dtype)
+    print(y_reg.shape)
+    print(y_reg.dtype)
+    print(y_class.shape)
+    print(y_class.dtype)
+
+    cnn = build_cnn3_classifier(mel_spec_x=128,
+                                mel_spec_y=88,
+                                n_reg=1,
+                                n_class=14)
+    cnn.summary()
+    cnn.compile(optimizer='adam', loss=['mse', 'sparse_categorical_crossentropy'], metrics=['mae', 'acc'])
+
+    cnn.fit([x, x_midi], [y_reg, y_class], batch_size=64, epochs=100, validation_split=0.2, shuffle=True)
