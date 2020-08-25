@@ -39,7 +39,7 @@ DEFAULT_DISTORTION = {
     96: 1.0,   # Dist_Wet
     97: 0.25,  # Dist_Drv
     98: 0.0,   # Dist_L/B/H
-    99: 0.0,   # Dist_Mode
+    99: 0.6,   # Dist_Mode
     100: 0.5,  # Dist_Freq
     101: 0.5,  # Dist_BW
     102: 0.0,  # Dist_PrePost
