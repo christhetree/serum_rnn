@@ -132,3 +132,14 @@ print('i like pie')
 #     # # engine.set_parameter(154, 1.0)
 #     # # save_result = engine.save_preset(os.path.join(OUT_DIR, 'testing.fxp'))
 #     # # print(save_result)
+
+if np.random.random_sample() > 0.5:
+    curr_v = np.random.normal(0.75,
+                              0.125,
+                              (self.n_params,)).astype(np.float32)
+    self.curr_v = np.clip(curr_v, 0.0, 1.0)
+else:
+    curr_v = np.random.normal(0.25,
+                              0.125,
+                              (self.n_params,)).astype(np.float32)
+    self.curr_v = np.clip(curr_v, 0.0, 1.0)
