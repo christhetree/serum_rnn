@@ -45,10 +45,9 @@ RM_SR = 44100
 RM_BUFFER_SIZE = 512
 RM_FFT_SIZE = 512
 
-# # Audio rendering
-NOTE_LENGTH = 1.0
-RENDER_LENGTH = 1.0
-PARAM_GRANULARITY = 100
+# Audio generation
+RANDOM_GEN_THRESHOLD = 100
+MAX_DUPLICATES = 50
 
 # Mel spec
 MEL_SR = RM_SR
@@ -56,25 +55,3 @@ HOP_LENGTH = 256
 N_MELS = 256
 N_FFT = 4096
 MEL_MAX_DUR = 3.0
-
-# Default param values
-DEFAULT_DISTORTION = {
-    96: 1.0,   # Dist_Wet
-    97: 0.25,  # Dist_Drv
-    98: 0.0,   # Dist_L/B/H
-    99: 0.0,   # Dist_Mode
-    100: 0.5,  # Dist_Freq
-    101: 0.5,  # Dist_BW
-    102: 0.0,  # Dist_PrePost
-    154: 1.0,  # Dist Enable
-}
-
-DEFAULT_FLANGER = {
-    103: 1.0,  # Flg_Wet
-    104: 0.0,  # Flg_BPM_Sync
-    105: 0.25,  # Flg_Rate
-    106: 1.0,  # Flg_Dep
-    107: 0.5,  # Flg_Feed
-    108: 0.5,  # Flg_Stereo
-    155: 1.0,  # Flg Enable
-}

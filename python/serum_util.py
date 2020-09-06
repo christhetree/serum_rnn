@@ -10,8 +10,8 @@ from tqdm import tqdm
 from python.config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, \
     PRESETS_DIR
 
-logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO'))
 log = logging.getLogger(__name__)
+log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 
 def load_preset(engine: rm.RenderEngine,
