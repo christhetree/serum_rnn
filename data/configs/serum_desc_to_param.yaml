@@ -1,0 +1,273 @@
+A CoarsePit: 10
+A Fine: 5
+A Octave: 3
+A Pan: 2
+A Phase: 13
+A RandPhase: 12
+A Semi: 4
+A Uni LR: 172
+A Uni Stack: 178
+A Uni WTPos: 176
+A Uni Warp: 174
+A UniBlend: 8
+A UniDet: 7
+A Unison: 6
+A Vol: 1
+A WTPos: 11
+A Warp: 9
+A curve1: 71
+A curve2: 74
+A curve3: 77
+Amp.: 222
+B CoarsePit: 23
+B Fine: 18
+B Octave: 16
+B Pan: 15
+B Phase: 26
+B RandPhase: 25
+B Semi: 17
+B Uni LR: 173
+B Uni Stack: 179
+B Uni WTPos: 177
+B Uni Warp: 175
+B UniBlend: 21
+B UniDet: 20
+B Unison: 19
+B Vol: 14
+B WTPos: 24
+B Warp: 22
+Bend D: 167
+Bend U: 166
+Chaos1 BPM: 67
+Chaos1 Rate: 69
+Chaos2 BPM: 68
+Chaos2 Rate: 70
+Cho Enable: 157
+Cho_BPM_Sync: 117
+Cho_Dep: 121
+Cho_Dly: 119
+Cho_Dly2: 120
+Cho_Feed: 122
+Cho_Filt: 123
+Cho_Rate: 118
+Cho_Wet: 116
+CmpGain: 139
+CmpMBnd: 140
+Cmp_Att: 137
+Cmp_Rat: 136
+Cmp_Rel: 138
+Cmp_Thr: 135
+Comp Enable: 159
+CompMB H: 272
+CompMB L: 270
+CompMB M: 271
+Comp_Wet: 269
+D curve1: 72
+D curve2: 75
+D curve3: 78
+Decay: 83
+Dist Enable: 154
+Dist_BW: 101
+Dist_Drv: 97
+Dist_Freq: 100
+Dist_L/B/H: 98
+Dist_Mode: 99
+Dist_PrePost: 102
+Dist_Wet: 96
+Dly Enable: 158
+Dly_BPM_Sync: 127
+Dly_BW: 126
+Dly_Feed: 132
+Dly_Freq: 125
+Dly_Link: 128
+Dly_Mode: 131
+Dly_Off L: 133
+Dly_Off R: 134
+Dly_TimL: 129
+Dly_TimR: 130
+Dly_Wet: 124
+EQ Enable: 161
+EQ FrqH: 89
+EQ FrqL: 88
+EQ Q H: 91
+EQ Q L: 90
+EQ TypH: 95
+EQ TypL: 94
+EQ VolH: 93
+EQ VolL: 92
+Env1 Atk: 35
+Env1 Dec: 37
+Env1 Hold: 36
+Env1 Rel: 39
+Env1 Sus: 38
+Env2 Atk: 51
+Env2 Dec: 53
+Env2 Hld: 52
+Env2 Rel: 55
+Env2 Sus: 54
+Env3 Atk: 56
+Env3 Dec: 58
+Env3 Hld: 57
+Env3 Rel: 60
+Env3 Sus: 59
+FX Fil Drive: 145
+FX Fil Enable: 162
+FX Fil Freq: 143
+FX Fil Pan: 268
+FX Fil Reso: 144
+FX Fil Type: 142
+FX Fil Var: 146
+FX Fil Wet: 141
+Fil Cutoff: 45
+Fil Driv: 47
+Fil Mix: 49
+Fil Reso: 46
+Fil Stereo: 50
+Fil Type: 44
+Fil Var: 48
+Filter On: 216
+Flg Enable: 155
+Flg_BPM_Sync: 104
+Flg_Dep: 106
+Flg_Feed: 107
+Flg_Rate: 105
+Flg_Stereo: 108
+Flg_Wet: 103
+Hyp Enable: 163
+HypDim_Mix: 153
+HypDim_Size: 152
+Hyp_Detune: 149
+Hyp_Rate: 148
+Hyp_Retrig: 151
+Hyp_Unison: 150
+Hyp_Wet: 147
+LFO1 Rate: 61
+LFO1 smooth: 223
+LFO2 Rate: 62
+LFO2 smooth: 224
+LFO3 Rate: 63
+LFO3 smooth: 225
+LFO4 Rate: 64
+LFO4 smooth: 226
+LFO5 Rate: 260
+LFO5 smooth: 264
+LFO6 Rate: 261
+LFO6 smooth: 265
+LFO7 Rate: 262
+LFO7 smooth: 266
+LFO8 Rate: 263
+LFO8 smooth: 267
+Macro 1: 218
+Macro 2: 219
+Macro 3: 220
+Macro 4: 221
+Mast.Tun: 80
+MasterVol: 0
+Mod 1 amt: 180
+Mod 1 out: 181
+Mod 2 amt: 182
+Mod 2 out: 183
+Mod 3 amt: 184
+Mod 3 out: 185
+Mod 4 amt: 186
+Mod 4 out: 187
+Mod 5 amt: 188
+Mod 5 out: 189
+Mod 6 amt: 190
+Mod 6 out: 191
+Mod 7 amt: 192
+Mod 7 out: 193
+Mod 8 amt: 194
+Mod 8 out: 195
+Mod 9 amt: 196
+Mod 9 out: 197
+Mod Wheel: 217
+Mod10 amt: 198
+Mod10 out: 199
+Mod11 amt: 200
+Mod11 out: 201
+Mod12 amt: 202
+Mod12 out: 203
+Mod13 amt: 204
+Mod13 out: 205
+Mod14 amt: 206
+Mod14 out: 207
+Mod15 amt: 208
+Mod15 out: 209
+Mod16 amt: 210
+Mod16 out: 211
+Mod17 amt: 228
+Mod17 out: 229
+Mod18 amt: 230
+Mod18 out: 231
+Mod19 amt: 232
+Mod19 out: 233
+Mod20 amt: 234
+Mod20 out: 235
+Mod21 amt: 236
+Mod21 out: 237
+Mod22 amt: 238
+Mod22 out: 239
+Mod23 amt: 240
+Mod23 out: 241
+Mod24 amt: 242
+Mod24 out: 243
+Mod25 amt: 244
+Mod25 out: 245
+Mod26 amt: 246
+Mod26 out: 247
+Mod27 amt: 248
+Mod27 out: 249
+Mod28 amt: 250
+Mod28 out: 251
+Mod29 amt: 252
+Mod29 out: 253
+Mod30 amt: 254
+Mod30 out: 255
+Mod31 amt: 256
+Mod31 out: 257
+Mod32 amt: 258
+Mod32 out: 259
+Noise Fine: 29
+Noise Level: 27
+Noise Pan: 30
+Noise Phase: 32
+Noise Pitch: 28
+Noise RandPhase: 31
+Osc A On: 212
+Osc B On: 213
+Osc N On: 214
+Osc S On: 215
+OscA>Fil: 40
+OscAPitchTrack: 164
+OscB>Fil: 41
+OscBPitchTrack: 165
+OscN>Fil: 42
+OscS>Fil: 43
+Phs Enable: 156
+Phs_BPM_Sync: 110
+Phs_Dpth: 112
+Phs_Feed: 114
+Phs_Frq: 113
+Phs_Rate: 111
+Phs_Stereo: 115
+Phs_Wet: 109
+Pitch Bend: 227
+PortCurve: 66
+PortTime: 65
+R curve1: 73
+R curve2: 76
+R curve3: 79
+Rev Enable: 160
+Spin Depth: 87
+Spin Rate: 85
+Sub Osc Level: 33
+Sub Osc Pan: 34
+SubOscOctave: 171
+SubOscShape: 170
+Verb Wet: 81
+VerbHiCt: 86
+VerbLoCt: 84
+VerbSize: 82
+WarpOscA: 168
+WarpOscB: 169

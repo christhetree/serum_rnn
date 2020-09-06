@@ -5,13 +5,13 @@ from typing import Dict, Any
 import gym
 import numpy as np
 from gym.spaces import Box, MultiDiscrete
-from stable_baselines3 import PPO, A2C
-from stable_baselines3.common import make_vec_env
-from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
-import torch as th
+from stable_baselines import PPO2, A2C
+from stable_baselines.common import make_vec_env
+# from stable_baselines.common.base_class import BaseAlgorithm
+from stable_baselines.common.env_checker import check_env
+from stable_baselines.common.evaluation import evaluate_policy
+from stable_baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
+# import torch as th
 
 # logging.basicConfig(level=os.environ.get('LOGLEVEL', 'DEBUG'))
 logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO'))
@@ -119,7 +119,7 @@ class MeanEnv(gym.Env):
         pass
 
 
-def render(model: BaseAlgorithm,
+def render(model: Any,
            n_render_steps: int,
            deterministic: bool = False,
            verbose: bool = False) -> (int, int):
@@ -190,18 +190,19 @@ def render(model: BaseAlgorithm,
 
 if __name__ == '__main__':
     # train_env = MeanEnv()
-    # train_env = gym.make('CartPole-v1')
+    # train_env = gym.make('FrozenLake-v0')
     # check_env(train_env)
     # exit()
+    # train_env = make_vec_env('FrozenLake-v0', n_envs=4, vec_env_cls=DummyVecEnv)
     train_env = make_vec_env(MeanEnv, n_envs=4, vec_env_cls=DummyVecEnv)
     # train_env = make_vec_env(MeanEnv, n_envs=4, vec_env_cls=SubprocVecEnv)
     # env = make_vec_env(MeanEnv, n_envs=4, vec_env_cls=SubprocVecEnv)
 
     # policy_kwargs = dict(activation_fn=th.nn.ReLU, net_arch=[4])
-    policy_kwargs = dict(net_arch=[64, 64])
+    # policy_kwargs = dict(net_arch=[128, 128])
     # policy_kwargs = None
-    # policy_kwargs = dict(net_arch=[dict(vf=[8], pi=[8])])
-    model = PPO('MlpPolicy', train_env, policy_kwargs=policy_kwargs, verbose=1)
+    policy_kwargs = dict(net_arch=[dict(vf=[64, 64], pi=[64, 64])])
+    model = PPO2('MlpPolicy', train_env, policy_kwargs=policy_kwargs, verbose=1)
     # model = A2C('MlpPolicy', train_env, policy_kwargs=policy_kwargs, verbose=1)
     # model = PPO('MlpPolicy',
     #             env,
@@ -213,13 +214,14 @@ if __name__ == '__main__':
     n_render_steps = 1000
     n_random_renders = 0
     n_actual_renders = 0
-    eval_ep = 100
+    eval_ep = 200
     deterministic = True
-    render_eval = True
+    render_eval = False
     verbose = False
 
     log.info('Random render')
     render_env = MeanEnv()
+    # render_env = gym.make('FrozenLake-v0')
     eval_random_policy = evaluate_policy(model,
                                          render_env,
                                          n_eval_episodes=eval_ep,
@@ -238,7 +240,7 @@ if __name__ == '__main__':
         log.info(f'mean random stuck = {np.mean(random_stuck):.4f}')
 
     log.info('Training')
-    model.learn(total_timesteps=n_train_steps)
+    model.learn(total_timesteps=n_train_steps, log_interval=1000)
     # model.save('testing_model.zip')
     # log.info(f'train env n_done_eps = {train_env.done_eps}')
 

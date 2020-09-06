@@ -143,3 +143,26 @@ else:
                               0.125,
                               (self.n_params,)).astype(np.float32)
     self.curr_v = np.clip(curr_v, 0.0, 1.0)
+
+
+
+gen_config = {
+    'root_dir': '/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test',
+    'n': 10000,
+    'preset': 'default',
+    'note_length': 1.0,
+    'render_length': 1.0,
+    'midi': [40],
+    'vel': [127],
+    'effects': [{
+        'name': 'distortion',
+        'Dist_Drv': [],
+        'Dist_Mode': [],
+    }, {
+        'name': 'flanger',
+        'Flg_Rate': [],
+        'Flg_Dep': [],
+        'Flg_Feed': [],
+        'Flg_Stereo': [],
+    }]
+}

@@ -1,0 +1,21 @@
+binary:
+- 154
+categorical:
+  99: 14
+  102: 3
+continuous:
+- 96
+- 97
+- 98
+- 100
+- 101
+default:
+  96: 1.0   # Dist_Wet
+  97: 0.25  # Dist_Drv
+  98: 0.0   # Dist_L/B/H
+  99: 0.0   # Dist_Mode
+  100: 0.5  # Dist_Freq
+  101: 0.5  # Dist_BW
+  102: 0.0  # Dist_PrePost
+  154: 1.0  # Dist Enable
+name: distortion

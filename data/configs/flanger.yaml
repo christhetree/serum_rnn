@@ -1,0 +1,19 @@
+binary:
+- 104
+- 155
+categorical:
+continuous:
+- 103
+- 105
+- 106
+- 107
+- 108
+default:
+  103: 1.0   # Flg_Wet
+  104: 0.0   # Flg_BPM_Sync
+  105: 0.25  # Flg_Rate
+  106: 1.0   # Flg_Dep
+  107: 0.5   # Flg_Feed
+  108: 0.5   # Flg_Stereo
+  155: 1.0   # Flg Enable
+name: flanger

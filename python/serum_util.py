@@ -62,17 +62,6 @@ def find_fxp_differences(path_a: str, path_b: str) -> None:
     log.info(f'Found the following differences: {differences}')
 
 
-def load_presets(path: str) -> Dict[str, Dict[int, float]]:
-    with open(path, 'r') as input_f:
-        presets_str = json.load(input_f)
-
-    presets = {}
-    for preset_name, preset in presets_str.items():
-        presets[preset_name] = {int(k): v for k, v in preset.items()}
-
-    return presets
-
-
 def set_preset(engine: rm.RenderEngine, preset: Dict[int, float]) -> None:
     for param_idx, param_value in preset.items():
         engine.set_parameter(param_idx, param_value)
