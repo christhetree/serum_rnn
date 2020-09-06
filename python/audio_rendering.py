@@ -14,6 +14,7 @@ from python.config import RM_SR, CONFIGS_DIR, \
     RANDOM_GEN_THRESHOLD, MAX_DUPLICATES
 from python.serum_util import setup_serum, set_preset
 
+logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'DEBUG'))
 
@@ -181,10 +182,14 @@ def generate_render_hash(effect_names: List[str],
                          param_n_digits: Dict[int, int]) -> str:
     hash_tokens = ['_'.join(effect_names)]
 
-    for param, choice in sorted(default_diff.items()):
-        desc = PARAM_TO_DESC[param]
-        n_digits = param_n_digits[param]
-        hash_tokens.append(f'{desc}_{choice:0{n_digits}}')
+    for effect_name in effect_names:
+        effect = get_effect(effect_name)
+        for param in effect.order:
+            if param in default_diff:
+                choice = default_diff[param]
+                desc = PARAM_TO_DESC[param]
+                n_digits = param_n_digits[param]
+                hash_tokens.append(f'{desc}_{choice:0{n_digits}}')
 
     render_hash = '__'.join(hash_tokens)
 

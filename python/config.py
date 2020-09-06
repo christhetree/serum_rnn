@@ -1,11 +1,38 @@
 import logging
 import os
-from collections import namedtuple
+from typing import List, Dict
 
 import yaml
 
-logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO'))
+logging.basicConfig()
 log = logging.getLogger(__name__)
+log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
+
+
+class Effect:
+    def __init__(self,
+                 name: str,
+                 default: Dict[int, float],
+                 binary: List[int],
+                 categorical: Dict[int, int],
+                 continuous: List[int]):
+        super().__init__()
+        self.name = name
+        self.default = default
+        self.binary = binary
+        self.categorical = categorical
+        self.continuous = continuous
+
+        order = []
+        if self.continuous is not None:
+            order.extend(sorted(self.continuous))
+        if self.categorical is not None:
+            order.extend(sorted(list(self.categorical.keys())))
+        if self.binary is not None:
+            order.extend(sorted(self.binary))
+
+        self.order = order
+
 
 # Paths
 ROOT_DIR = '/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/'
@@ -19,6 +46,7 @@ VST_DIR = os.path.join(DATA_DIR, 'vst')
 DATASETS_DIR = os.path.join(DATA_DIR, 'datasets')
 
 SERUM_PATH = os.path.join(VST_DIR, 'Serum.vst')
+log.info(f'Serum path: {SERUM_PATH}')
 DEFAULT_SERUM_PRESET_PATH = os.path.join(PRESETS_DIR, 'default.fxp')
 
 with open(os.path.join(CONFIGS_DIR, 'serum_desc_to_param.yaml'), 'r') as f:
@@ -33,12 +61,8 @@ with open(os.path.join(CONFIGS_DIR, 'distortion.yaml'), 'r') as f:
 with open(os.path.join(CONFIGS_DIR, 'flanger.yaml'), 'r') as f:
     flanger_config = yaml.full_load(f)
 
-Effect = namedtuple('Effect', 'name default binary categorical continuous')
-
 distortion = Effect(**distortion_config)
 flanger = Effect(**flanger_config)
-
-log.info(f'Serum path: {SERUM_PATH}')
 
 # Renderman
 RM_SR = 44100

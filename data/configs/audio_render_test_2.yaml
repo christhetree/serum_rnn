@@ -2,6 +2,9 @@ effects:
 - Flg_BPM_Sync: []
   Flg_Rate: [25, 50, 100]
   name: flanger
+- Dist_Drv: [25, 50, 100]
+  Dist_Mode: [0, 6, 8]
+  name: distortion
 granularity: 100
 midi: 60
 n: -1
