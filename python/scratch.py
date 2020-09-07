@@ -166,3 +166,24 @@ gen_config = {
         'Flg_Stereo': [],
     }]
 }
+
+# data_path = os.path.join(DATASETS_DIR, 'renders_10k_testing_midi.npz')
+# data = np.load(data_path)
+# renders = data['renders']
+# params = data['params']
+# mels = []
+# print(renders.shape)
+# print(params.shape)
+# exit()
+#
+# for render in tqdm(renders):
+#     mel = get_mel_spec(render,
+#                        sr=RM_SR,
+#                        max_n_of_frames=44544,
+#                        normalize_audio=True,
+#                        normalize_mel=True)
+#     mels.append(mel)
+#
+# mels = np.array(mels, dtype=np.float32)
+# print(mels.shape)
+# np.savez('../data/datasets/mels_10k_testing_midi.npz', mels=mels, params=params)
