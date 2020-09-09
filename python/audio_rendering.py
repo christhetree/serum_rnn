@@ -9,9 +9,9 @@ import soundfile as sf
 import yaml
 from tqdm import tqdm
 
-from python.config import RM_SR, CONFIGS_DIR, \
-    Effect, distortion, flanger, DESC_TO_PARAM, PARAM_TO_DESC, \
-    RANDOM_GEN_THRESHOLD, MAX_DUPLICATES
+from python.config import RM_SR, CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
+    MAX_DUPLICATES
+from python.effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC
 from python.serum_util import setup_serum, set_preset
 
 logging.basicConfig()
@@ -168,15 +168,6 @@ class PatchGenerator:
         yield from self._set_patch_rec(self.curr_params, default_diff, patch)
 
 
-def get_effect(name: str) -> Effect:
-    if name == 'distortion':
-        return distortion
-    elif name == 'flanger':
-        return flanger
-    else:
-        raise ValueError
-
-
 def generate_render_hash(effect_names: List[str],
                          default_diff: Dict[int, int],
                          param_n_digits: Dict[int, int]) -> str:
@@ -208,6 +199,7 @@ def render_audio(render_config_path: str,
     rc = RenderConfig(**render_config)
 
     if not os.path.exists(rc.root_dir):
+        log.info(f'Making new dir for {rc.root_dir}')
         os.makedirs(rc.root_dir)
     else:
         log.info(f'Root dir {rc.root_dir} already exists.')
@@ -218,6 +210,7 @@ def render_audio(render_config_path: str,
 
     save_dir = os.path.join(rc.root_dir, int_dir_name)
     if not os.path.exists(save_dir):
+        log.info(f'Making new dir for {int_dir_name}')
         os.makedirs(save_dir)
     else:
         log.info(f'Save dir {int_dir_name} already exists.')
@@ -228,9 +221,11 @@ def render_audio(render_config_path: str,
         effect_dir_name = 'dry'
     else:
         effect_dir_name = '_'.join(effect_names)
+    effect_dir_name = f'{effect_dir_name}__gran_{rc.granularity}'
 
     save_dir = os.path.join(save_dir, effect_dir_name)
     if not os.path.exists(save_dir):
+        log.info(f'Making new dir for {effect_dir_name}')
         os.makedirs(save_dir)
     else:
         log.info(f'Save dir {effect_dir_name} already exists.')

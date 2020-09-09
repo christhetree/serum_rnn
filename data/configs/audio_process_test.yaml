@@ -1,8 +1,8 @@
-hop_length: 256
+hop_length: 512
 max_n_of_frames: 44544
 n_fft: 4096
-n_mels: 256
+n_mels: 128
 normalize_audio: False
 normalize_mel: True
 sr: 44100
-root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/dry
+root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000

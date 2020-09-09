@@ -1,7 +1,8 @@
 import logging
+import ntpath
 import os
-from collections import namedtuple
-from typing import Optional
+from collections import namedtuple, defaultdict
+from typing import Optional, Dict, Union, Set
 
 import librosa as lr
 import numpy as np
@@ -10,12 +11,13 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, MEL_MAX_DUR, \
-    DATASETS_DIR, RM_SR, CONFIGS_DIR
+from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR
+from python.effects import get_effect, param_to_type, DESC_TO_PARAM, \
+    param_to_effect, PARAM_TO_DESC
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
-log.setLevel(level=os.environ.get('LOGLEVEL', 'DEBUG'))
+log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 ProcessConfig = namedtuple(
     'ProcessConfig',
@@ -145,6 +147,9 @@ def process_audio(process_config_path: str) -> None:
             render_names.append(render_name)
     log.info(f'{len(render_names)} renders found in {pc.root_dir}')
 
+    log.info('Shuffling render names.')
+    np.random.shuffle(render_names)
+
     new_proc_render_names = []
     new_mels = []
     for render_name in tqdm(render_names):
@@ -202,5 +207,155 @@ def process_audio(process_config_path: str) -> None:
         os.remove(os.path.join(save_dir, existing_npz_name))
 
 
+def parse_save_name(save_name: str) -> Dict[str, Union[int, float, bool]]:
+    save_name = os.path.splitext(save_name.strip())[0]  # Get rid of file ext.
+    tokens = save_name.split('__')
+    name = tokens[0]
+    result = {'name': name}
+
+    for token in tokens[1:]:
+        sub_tokens = token.split('_')
+        if len(sub_tokens) > 1:
+            key = '_'.join(sub_tokens[:-1])
+            value = sub_tokens[-1]
+            if '.' in value:
+                result[key] = float(value)
+            elif value == 'T':
+                result[key] = True
+            elif value == 'F':
+                result[key] = False
+            else:
+                result[key] = int(value)
+        else:
+            result[token] = True
+
+    return result
+
+
+def reverse_render_hash() -> Dict[int, Union[int, float]]:
+    pass
+
+
+def generate_y(path: str,
+               params: Optional[Set[int]] = None) -> None:
+    assert os.path.isfile(path)
+
+    data_npz_name = os.path.splitext(ntpath.basename(path))[0]
+    effect_dir_name = os.path.normpath(path).split(os.path.sep)[-3]
+    log.info(f'.npz file name: {data_npz_name}')
+    log.info(f'Effect dir name: {effect_dir_name}')
+
+    effect_dir_info = parse_save_name(effect_dir_name)
+    granularity = effect_dir_info['gran']
+    effect_names = effect_dir_info['name'].split('_')
+    log.info(f'Using granularity of {granularity}')
+    log.info(f'{effect_names} effects found.')
+
+    if params is None:
+        log.info('No params provided. Calculating y for all params.')
+        params = set()
+        for effect_name in effect_names:
+            effect = get_effect(effect_name)
+            for param in effect.order:
+                params.add(param)
+
+    log.info(f'Calculating y for the following params: {sorted(list(params))}')
+
+    param_types = defaultdict(list)
+    for param in params:
+        param_types[param_to_type[param]].append(param)
+    binary_params = sorted(param_types['binary'])
+    categorical_params = sorted(param_types['categorical'])
+    continuous_params = sorted(param_types['continuous'])
+
+    log.info(f'Binary params: {binary_params}')
+    log.info(f'Categorical params: {categorical_params}')
+    log.info(f'Continuous params: {continuous_params}')
+
+    data = np.load(path)
+    render_names = data['render_names'].tolist()
+    log.info(f'{len(render_names)} renders found in {data_npz_name}')
+    y = defaultdict(list)
+
+    for render_name in tqdm(render_names):
+        render_name_info = parse_save_name(render_name)
+        render_name_params = {}
+        for desc, value in render_name_info.items():
+            if desc == 'name':
+                continue
+
+            param = DESC_TO_PARAM[desc]
+            render_name_params[param] = value
+
+        bin_values = []
+        for param in binary_params:
+            if param in render_name_params:
+                bin_values.append(float(render_name_params[param]))
+            else:
+                effect = param_to_effect[param]
+                bin_values.append(effect.default[param])
+
+        if bin_values:
+            y['binary'].append(bin_values)
+
+        for param in categorical_params:
+            desc = PARAM_TO_DESC[param]
+            if param in render_name_params:
+                value = int(render_name_params[param])
+            else:
+                effect = param_to_effect[param]
+                n_categories = effect.categorical[param]
+                value = int((effect.default[param] * n_categories) + 0.5)
+            y[desc].append(value)
+
+        cont_values = []
+        for param in continuous_params:
+            if param in render_name_params:
+                cont_values.append(render_name_params[param] / granularity)
+            else:
+                effect = param_to_effect[param]
+                cont_values.append(effect.default[param])
+
+        if cont_values:
+            y['continuous'].append(cont_values)
+
+    y = dict(y)
+
+    log.info('Converting to ndarray.')
+    for key in tqdm(y):
+        if key == 'binary' or key == 'continous':
+            y[key] = np.array(y[key], dtype=np.float32)
+        else:
+            y[key] = np.array(y[key], dtype=np.int32)
+
+        log.info(f'{key} ndarray shape: {y[key].shape}')
+
+    n_categories = []
+    param_to_desc = []
+    for param in categorical_params:
+        effect = param_to_effect[param]
+        n_categories = effect.categorical[param]
+        desc = PARAM_TO_DESC[param]
+        param_to_desc.append(desc)
+
+    log.info(f'n_categories = {n_categories}')
+    if binary_params:
+        y['binary_params'] = np.array(binary_params, dtype=np.int32)
+    if categorical_params:
+        y['categorical_params'] = np.array(categorical_params, dtype=np.int32)
+        y['n_categories'] = np.array(n_categories, dtype=np.int32)
+        y['param_to_desc'] = np.array(param_to_desc)
+    if continuous_params:
+        y['continuous_params'] = np.array(binary_params, dtype=np.int32)
+
+    save_dir = os.path.split(path)[0]
+    save_name = f'{data_npz_name}_y.npz'
+    save_path = os.path.join(save_dir, save_name)
+    log.info(f'Saving as {save_name}')
+    np.savez(save_path, **y)
+
+
 if __name__ == '__main__':
-    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_1414.npz',
+               params=None)

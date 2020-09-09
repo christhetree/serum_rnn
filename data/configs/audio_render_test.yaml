@@ -2,14 +2,14 @@ effects:
 - Dist_Drv: []
   Dist_Mode: []
   name: distortion
-- Flg_Dep: []
-  Flg_Feed: []
-  Flg_Rate: []
-  Flg_Stereo: []
-  name: flanger
-granularity: 100
+#- Flg_Dep: []
+#  Flg_Feed: []
+#  Flg_Rate: []
+#  Flg_Stereo: []
+#  name: flanger
+granularity: 1000
 midi: 40
-n: 10000
+n: -1
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0
