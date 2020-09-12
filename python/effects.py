@@ -4,7 +4,7 @@ from typing import List, Dict
 
 import yaml
 
-from python.config import CONFIGS_DIR
+from config import CONFIGS_DIR
 
 logging.basicConfig()
 log = logging.getLogger(__name__)

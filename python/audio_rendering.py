@@ -9,10 +9,10 @@ import soundfile as sf
 import yaml
 from tqdm import tqdm
 
+from effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC
 from python.config import RM_SR, CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
     MAX_DUPLICATES
-from python.effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC
-from python.serum_util import setup_serum, set_preset
+from serum_util import setup_serum, set_preset
 
 logging.basicConfig()
 log = logging.getLogger(__name__)

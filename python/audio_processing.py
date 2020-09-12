@@ -11,7 +11,7 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR
+from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT
 from python.effects import get_effect, param_to_type, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 
@@ -183,7 +183,7 @@ def process_audio(process_config_path: str) -> None:
         return
 
     log.info('Converting mels to ndarray.')
-    new_mels = np.array(new_mels, dtype=np.float32)
+    new_mels = np.expand_dims(np.array(new_mels, dtype=np.float32), axis=-1)
 
     if existing_npz_name:
         log.info(f'Prev. mels shape = {mels.shape}')
@@ -232,10 +232,6 @@ def parse_save_name(save_name: str) -> Dict[str, Union[int, float, bool]]:
     return result
 
 
-def reverse_render_hash() -> Dict[int, Union[int, float]]:
-    pass
-
-
 def generate_y(path: str,
                params: Optional[Set[int]] = None) -> None:
     assert os.path.isfile(path)
@@ -259,7 +255,8 @@ def generate_y(path: str,
             for param in effect.order:
                 params.add(param)
 
-    log.info(f'Calculating y for the following params: {sorted(list(params))}')
+    params = sorted(list(params))
+    log.info(f'Calculating y for the following params: {params}')
 
     param_types = defaultdict(list)
     for param in params:
@@ -323,7 +320,7 @@ def generate_y(path: str,
 
     log.info('Converting to ndarray.')
     for key in tqdm(y):
-        if key == 'binary' or key == 'continous':
+        if key == 'binary' or key == 'continuous':
             y[key] = np.array(y[key], dtype=np.float32)
         else:
             y[key] = np.array(y[key], dtype=np.int32)
@@ -334,9 +331,10 @@ def generate_y(path: str,
     param_to_desc = []
     for param in categorical_params:
         effect = param_to_effect[param]
-        n_categories = effect.categorical[param]
+        n_classes = effect.categorical[param]
         desc = PARAM_TO_DESC[param]
         param_to_desc.append(desc)
+        n_categories.append(n_classes)
 
     log.info(f'n_categories = {n_categories}')
     if binary_params:
@@ -346,10 +344,10 @@ def generate_y(path: str,
         y['n_categories'] = np.array(n_categories, dtype=np.int32)
         y['param_to_desc'] = np.array(param_to_desc)
     if continuous_params:
-        y['continuous_params'] = np.array(binary_params, dtype=np.int32)
+        y['continuous_params'] = np.array(continuous_params, dtype=np.int32)
 
     save_dir = os.path.split(path)[0]
-    save_name = f'{data_npz_name}_y.npz'
+    save_name = f'{data_npz_name}__y_{"_".join(str(p) for p in params)}.npz'
     save_path = os.path.join(save_dir, save_name)
     log.info(f'Saving as {save_name}')
     np.savez(save_path, **y)
@@ -357,5 +355,7 @@ def generate_y(path: str,
 
 if __name__ == '__main__':
     # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
-    generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_1414.npz',
-               params=None)
+    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_1414.npz',
+    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/flanger__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_14000.npz',
+    generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
+               params=[97, 99])

@@ -7,8 +7,7 @@ from typing import Dict
 import librenderman as rm
 from tqdm import tqdm
 
-from python.config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, \
-    PRESETS_DIR
+from config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, PRESETS_DIR
 
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))

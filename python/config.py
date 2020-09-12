@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 # Paths
-ROOT_DIR = '/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/'
+ROOT_DIR = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
 
 OUT_DIR = os.path.join(ROOT_DIR, 'out')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
