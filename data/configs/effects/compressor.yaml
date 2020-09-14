@@ -1,0 +1,27 @@
+binary:
+- 140
+- 159
+categorical:
+continuous:
+- 135
+- 136
+- 137
+- 138
+- 139
+- 269
+- 270
+- 271
+- 272
+default:
+  135: 0.5   # Cmp_Thr
+  136: 0.75  # Cmp_Rat
+  137: 0.3   # Cmp_Att
+  138: 0.3   # Cmp_Rel
+  139: 0.0   # CmpGain
+  140: 0.0   # CmpMBnd
+  159: 1.0   # Comp Enable, changed
+  269: 1.0   # Comp_wet
+  270: 0.5   # CompMB L
+  271: 0.5   # CompMB M
+  272: 0.5   # CompMB H
+name: compressor

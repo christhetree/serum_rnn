@@ -11,8 +11,8 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from python.config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT
-from python.effects import get_effect, param_to_type, DESC_TO_PARAM, \
+from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR
+from effects import get_effect, param_to_type, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 
 logging.basicConfig()
@@ -141,11 +141,12 @@ def process_audio(process_config_path: str) -> None:
     assert len(mels) == len(proc_render_names)
     assert len(proc_hashes) == len(proc_render_names)
 
+    renders_dir = os.path.join(pc.root_dir, 'renders')
     render_names = []
-    for render_name in os.listdir(pc.root_dir):
+    for render_name in os.listdir(renders_dir):
         if render_name.endswith('.wav'):
             render_names.append(render_name)
-    log.info(f'{len(render_names)} renders found in {pc.root_dir}')
+    log.info(f'{len(render_names)} renders found in {renders_dir}')
 
     log.info('Shuffling render names.')
     np.random.shuffle(render_names)
@@ -157,7 +158,7 @@ def process_audio(process_config_path: str) -> None:
             log.debug(f'{render_name} has already been processed.')
             continue
 
-        audio_path = os.path.join(pc.root_dir, render_name)
+        audio_path = os.path.join(renders_dir, render_name)
         audio, sr = sf.read(audio_path)
 
         assert sr == pc.sr
@@ -357,5 +358,6 @@ if __name__ == '__main__':
     # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
     # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_1414.npz',
     # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/flanger__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_14000.npz',
-    generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
+    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
+    generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
                params=[97, 99])

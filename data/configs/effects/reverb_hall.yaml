@@ -1,0 +1,21 @@
+binary:
+- 160
+categorical:
+continuous:
+- 81
+- 82
+- 83
+- 84
+- 85
+- 86
+- 87
+default:
+  81: 0.2   # Verb Wet
+  82: 0.35  # VerbSize
+  83: 0.35  # Decay
+  84: 0.0   # VerbLoCt
+  85: 0.25  # Spin Rate
+  86: 0.35  # VerbHiCt
+  87: 0.2   # Spin Depth
+  160: 1.0  # Rev Enable, changed
+name: reverb_hall

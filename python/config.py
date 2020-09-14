@@ -16,6 +16,7 @@ PRESETS_DIR = os.path.join(DATA_DIR, 'presets')
 VST_DIR = os.path.join(DATA_DIR, 'vst')
 DATASETS_DIR = os.path.join(DATA_DIR, 'datasets')
 
+EFFECTS_DIR = os.path.join(CONFIGS_DIR, 'effects')
 SERUM_PATH = os.path.join(VST_DIR, 'Serum.vst')
 log.info(f'Serum path: {SERUM_PATH}')
 DEFAULT_SERUM_PRESET_PATH = os.path.join(PRESETS_DIR, 'default.fxp')

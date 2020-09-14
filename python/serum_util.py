@@ -98,3 +98,10 @@ def crawl_presets(root_dir: str,
 
     with open(save_path, 'w') as output_f:
         json.dump(presets, output_f, indent=4, sort_keys=True)
+
+
+if __name__ == '__main__':
+    find_fxp_differences(os.path.join(PRESETS_DIR, 'default.fxp'),
+                         os.path.join(PRESETS_DIR, 'chorus.fxp'))
+    from effects import get_effect
+    get_effect('compressor')

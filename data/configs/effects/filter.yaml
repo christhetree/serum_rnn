@@ -1,0 +1,21 @@
+binary:
+- 162
+categorical:
+  142: 96
+continuous:
+- 141
+- 143
+- 144
+- 145
+- 146
+- 268
+default:
+  141: 1.0  # FX Fil Wet
+  142: 0.0  # FX Fil Type
+  143: 0.5  # FX Fil Freq
+  144: 0.0  # FX Fil Reso
+  145: 0.0  # FX Fil Drive
+  146: 0.0  # FX Fil Var
+  162: 1.0  # FX Fil Enable, changed
+  268: 0.5  # FX Fil Pan
+name: filter

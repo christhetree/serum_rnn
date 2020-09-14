@@ -19,7 +19,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 1
+GPU = 0
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -301,15 +301,15 @@ def train_rhythm_vae(
             verbose=1)
 
 
-
-
 if __name__ == '__main__':
-    x_data_path = 'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz'
+    # x_data_path = 'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz'
+    x_data_path = 'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/flanger__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_14000.npz'
     x_data = np.load(os.path.join(DATA_DIR, x_data_path))
     x = x_data['mels']
     log.info(f'mels shape = {x.shape}')
 
-    y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_97_99.npz'
+    # y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_97_99.npz'
+    y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_105_106_107_108.npz'
 
     n_bin = 0
     n_cate = []
@@ -360,8 +360,8 @@ if __name__ == '__main__':
     log.info(f'y_losses = {y_losses}')
     log.info(f'metrics = {metrics}')
 
-    cnn = build_baseline_cnn(mel_spec_x=128,
-                             mel_spec_y=88,
+    cnn = build_baseline_cnn(mel_spec_x=256,
+                             mel_spec_y=175,
                              n_bin=n_bin,
                              n_cate=n_cate,
                              cate_names=cate_names,
@@ -375,6 +375,6 @@ if __name__ == '__main__':
     cnn.fit(x,
             y_s,
             batch_size=64,
-            epochs=32,
+            epochs=64,
             validation_split=0.2,
             shuffle=True)

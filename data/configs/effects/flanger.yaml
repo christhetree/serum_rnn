@@ -15,5 +15,5 @@ default:
   106: 1.0   # Flg_Dep
   107: 0.5   # Flg_Feed
   108: 0.5   # Flg_Stereo
-  155: 1.0   # Flg Enable
+  155: 1.0   # Flg Enable, changed
 name: flanger

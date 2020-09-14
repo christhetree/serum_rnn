@@ -1,0 +1,21 @@
+binary:
+- 151
+- 163
+categorical:
+  150: 8
+continuous:
+- 147
+- 148
+- 149
+- 152
+- 153
+default:
+  147: 0.5     # Hyp_Wet
+  148: 0.4     # Hyp_Rate
+  149: 0.25    # Hyp_Detune
+  150: 0.5714  # Hyp_Unison
+  151: 0.0     # Hyp_Retrig
+  152: 0.5     # HypDim_Size
+  153: 0.0     # HypDim_Mix
+  163: 1.0     # Hyp Enable, changed
+name: hyper_dim

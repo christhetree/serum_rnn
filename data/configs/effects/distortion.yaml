@@ -17,5 +17,5 @@ default:
   100: 0.5  # Dist_Freq
   101: 0.5  # Dist_BW
   102: 0.0  # Dist_PrePost
-  154: 1.0  # Dist Enable
+  154: 1.0  # Dist Enable, changed
 name: distortion

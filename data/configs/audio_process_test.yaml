@@ -1,7 +1,7 @@
 hop_length: 512
 max_n_of_frames: 44544
 n_fft: 4096
-n_mels: 128
+n_mels: 256
 normalize_audio: False
 normalize_mel: True
 sr: 44100

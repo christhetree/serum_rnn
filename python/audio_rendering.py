@@ -230,6 +230,11 @@ def render_audio(render_config_path: str,
     else:
         log.info(f'Save dir {effect_dir_name} already exists.')
 
+    save_dir = os.path.join(save_dir, 'renders')
+    if not os.path.exists(save_dir):
+        log.info('Making new dir for renders.')
+        os.makedirs(save_dir)
+
     render_names = set()
     for render_name in os.listdir(save_dir):
         if render_name.endswith('.wav'):

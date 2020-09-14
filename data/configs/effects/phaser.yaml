@@ -1,0 +1,21 @@
+binary:
+- 110
+- 156
+categorical:
+continuous:
+- 109
+- 111
+- 112
+- 113
+- 114
+- 115
+default:
+  109: 1.0   # Phs_Wet
+  110: 0.0   # Phs_BPM_Sync
+  111: 0.25  # Phs_Rate
+  112: 0.5   # Phs_Dpth
+  113: 0.5   # Phs_Frq
+  114: 0.8   # Phs_Feed
+  115: 0.5   # Phs_Stereo
+  156: 1.0   # Phs Enable, changed
+name: phaser

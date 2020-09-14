@@ -1,0 +1,23 @@
+binary:
+- 161
+categorical:
+  94: 3
+  95: 3
+continuous:
+- 88
+- 89
+- 90
+- 91
+- 92
+- 93
+default:
+  88: 0.333  # EQ FrqL
+  89: 0.666  # EQ FrqH
+  90: 0.6    # EQ Q L
+  91: 0.6    # EQ Q H
+  92: 0.5    # EQ VolL
+  93: 0.5    # EQ VolH
+  94: 0.0    # EQ TypL
+  95: 0.0    # EQ TypH
+  161: 1.0   # EQ Enable, changed
+name: eq

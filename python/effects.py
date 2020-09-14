@@ -4,7 +4,7 @@ from typing import List, Dict
 
 import yaml
 
-from config import CONFIGS_DIR
+from config import CONFIGS_DIR, EFFECTS_DIR
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class Effect:
                  default: Dict[int, float],
                  binary: List[int],
                  categorical: Dict[int, int],
-                 continuous: List[int]):
+                 continuous: List[int]) -> None:
         super().__init__()
         assert name is not None
         self.name = name
@@ -54,8 +54,21 @@ class Effect:
         if self.binary is not None:
             order.extend(sorted(self.binary))
 
+        assert len(order) == len(set(order))
+        assert all(p in self.default for p in order)
         self.order = order
 
+
+effects = {}
+for effect_config_name in os.listdir(EFFECTS_DIR):
+    if effect_config_name.endswith('.yaml'):
+        with open(os.path.join(EFFECTS_DIR, effect_config_name), 'r') as f:
+            effect_config = yaml.full_load(f)
+            effect = Effect(**effect_config)
+            assert effect.name not in effects
+            effects[effect.name] = effect
+
+log.info(f'Supported effects: {sorted(list(effects.keys()))}')
 
 with open(os.path.join(CONFIGS_DIR, 'serum_desc_to_param.yaml'), 'r') as f:
     DESC_TO_PARAM = yaml.full_load(f)
@@ -63,20 +76,12 @@ with open(os.path.join(CONFIGS_DIR, 'serum_desc_to_param.yaml'), 'r') as f:
 with open(os.path.join(CONFIGS_DIR, 'serum_param_to_desc.yaml'), 'r') as f:
     PARAM_TO_DESC = yaml.full_load(f)
 
-with open(os.path.join(CONFIGS_DIR, 'distortion.yaml'), 'r') as f:
-    distortion_config = yaml.full_load(f)
+assert all(p in PARAM_TO_DESC for p in DESC_TO_PARAM.values())
+assert all(d in DESC_TO_PARAM for d in PARAM_TO_DESC.values())
 
-with open(os.path.join(CONFIGS_DIR, 'flanger.yaml'), 'r') as f:
-    flanger_config = yaml.full_load(f)
-
-distortion = Effect(**distortion_config)
-flanger = Effect(**flanger_config)
-
-effects = {
-    'distortion': distortion,
-    'flanger': flanger,
-}
-log.info(f'Supported effects: {sorted(list(effects.keys()))}')
+all_params = [p for e in effects.values() for p in e.order]
+assert len(all_params) == len(set(all_params))
+assert all(p in PARAM_TO_DESC for p in all_params)
 
 param_to_effect = {p: e for e in effects.values() for p in e.order}
 param_to_type = {}

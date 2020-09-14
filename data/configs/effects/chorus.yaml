@@ -1,0 +1,23 @@
+binary:
+- 117
+- 157
+categorical:
+continuous:
+- 116
+- 118
+- 119
+- 120
+- 121
+- 122
+- 123
+default:
+  116: 0.5   # Cho_Wet
+  117: 0.0   # Cho_BPM_Sync
+  118: 0.25  # Cho_Rate
+  119: 0.5   # Cho_Dly
+  120: 0.0   # Cho_Dly2
+  121: 1.0   # Cho_Dep
+  122: 0.1   # Cho_Feed
+  123: 0.5   # Cho_Filt
+  157: 1.0   # Cho Enable, changed
+name: chorus

@@ -1,0 +1,29 @@
+binary:
+- 127
+- 128
+- 158
+categorical:
+  131: 3
+continuous:
+- 124
+- 125
+- 126
+- 129
+- 130
+- 132
+- 133
+- 134
+default:
+  124: 0.3    # Dly_Wet
+  125: 0.5    # Dly_Freq
+  126: 0.8    # Dly_BW
+  127: 0.0    # Dly_BPM_Sync, changed
+  128: 0.0    # Dly_Link
+  129: 0.625  # Dly_TimL
+  130: 0.625  # Dly_TimR
+  131: 0.0    # Dly_Mode
+  132: 0.4    # Dly_Feed
+  133: 0.5    # Dly_Off L
+  134: 0.5    # Dly_Off R
+  158: 1.0    # Dly Enable, changed
+name: delay
