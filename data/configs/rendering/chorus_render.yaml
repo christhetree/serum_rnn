@@ -1,13 +1,15 @@
 effects:
-- Flg_BPM_Sync: []
-  Flg_Rate: [25, 50, 100]
-  name: flanger
-- Dist_Drv: [25, 50, 100]
-  Dist_Mode: [0, 6, 8]
-  name: distortion
-granularity: 100
-midi: 60
-n: -1
+- Cho_Rate: []
+  Cho_Dly: []
+  Cho_Dly2: []
+  Cho_Dep: []
+  Cho_Feed: []
+  Cho_Filt: []
+  name: chorus
+gran: 100
+midi: 40
+n: 12500
+max_n: -1
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0

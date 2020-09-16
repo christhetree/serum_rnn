@@ -52,7 +52,7 @@ def get_mel_spec(audio: np.ndarray,
         hop_length=hop_length,
         n_mels=n_mels
     )
-    mel_spec = lr.power_to_db(mel_spec, np.max)
+    mel_spec = lr.power_to_db(mel_spec, ref=1.0)
 
     if normalize_mel:
         # Axis must be None to normalize across both dimensions at once
@@ -355,9 +355,9 @@ def generate_y(path: str,
 
 
 if __name__ == '__main__':
-    # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
     # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_1414.npz',
     # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/flanger__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_14000.npz',
     # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
-    generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
-               params=[97, 99])
+    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
+    #            params=[97, 99])

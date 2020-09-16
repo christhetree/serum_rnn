@@ -16,19 +16,18 @@ from serum_util import setup_serum, set_preset
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
-log.setLevel(level=os.environ.get('LOGLEVEL', 'DEBUG'))
+log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 RenderConfig = namedtuple(
     'RenderConfig',
-    'root_dir n preset sr note_length render_length midi vel '
-    'granularity effects'
+    'root_dir n max_n preset sr note_length render_length midi vel gran effects'
 )
 
 
 class PatchGenerator:
     def __init__(self, rc: RenderConfig) -> None:
         super().__init__()
-        self.granularity = rc.granularity
+        self.gran = rc.gran
 
         n_combos = 1
         params = set()
@@ -57,7 +56,7 @@ class PatchGenerator:
                     param = DESC_TO_PARAM[desc]
                     params.add(param)
                     default_value = effect.default[param]
-                    default = int((default_value * self.granularity) + 0.5)
+                    default = int((default_value * self.gran) + 0.5)
                     param_defaults[param] = default
 
                     if effect.binary and param in effect.binary:
@@ -65,7 +64,7 @@ class PatchGenerator:
                     elif effect.categorical and param in effect.categorical:
                         n_choices = effect.categorical[param]
                     elif effect.continuous and param in effect.continuous:
-                        n_choices = rc.granularity + 1
+                        n_choices = rc.gran + 1
                     else:
                         raise KeyError(
                             f'{desc} could not be found in {effect.name}.')
@@ -221,7 +220,7 @@ def render_audio(render_config_path: str,
         effect_dir_name = 'dry'
     else:
         effect_dir_name = '_'.join(effect_names)
-    effect_dir_name = f'{effect_dir_name}__gran_{rc.granularity}'
+    effect_dir_name = f'{effect_dir_name}__gran_{rc.gran}'
 
     save_dir = os.path.join(save_dir, effect_dir_name)
     if not os.path.exists(save_dir):
@@ -262,6 +261,10 @@ def render_audio(render_config_path: str,
     else:
         n_to_render = rc.n
 
+    if n_to_render > 0 and 0 < rc.max_n < init_n_renders + n_to_render:
+        n_to_render = max(0, rc.max_n - init_n_renders)
+        log.info(f'n reduced to {n_to_render} due to max n of {rc.max_n}')
+
     if n_to_render == -1:
         pbar = tqdm(total=patch_gen.n_combos)
 
@@ -289,8 +292,8 @@ def render_audio(render_config_path: str,
     else:
         n_rendered = 0
         duplicates_in_a_row = 0
-        pbar = tqdm(total=rc.n)
-        while n_rendered < rc.n:
+        pbar = tqdm(total=n_to_render)
+        while n_rendered < n_to_render:
             default_diff, patch = patch_gen.generate_random_patch()
             render_name = generate_render_hash(effect_names,
                                                default_diff,
@@ -321,4 +324,4 @@ def render_audio(render_config_path: str,
 
 
 if __name__ == '__main__':
-    render_audio(os.path.join(CONFIGS_DIR, 'audio_render_test.yaml'))
+    render_audio(os.path.join(CONFIGS_DIR, 'rendering/chorus_render.yaml'))

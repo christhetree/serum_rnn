@@ -1,0 +1,20 @@
+effects:
+- EQ FrqL: []
+  EQ FrqH: []
+  EQ Q L: []
+  EQ Q H: []
+  EQ VolL: []
+  EQ VolH: []
+  EQ TypL: []
+  EQ TypH: []
+  name: eq
+gran: 100
+midi: 40
+n: 12500
+max_n: -1
+note_length: 1.0
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
+render_length: 1.0
+root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test
+sr: 44100
+vel: 127

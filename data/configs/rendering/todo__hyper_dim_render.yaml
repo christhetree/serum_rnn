@@ -1,0 +1,17 @@
+# TODO
+effects:
+- Hyp_Rate: []
+  Hyp_Detune: []
+  Hyp_Unison: []
+  HypDim_Size: []
+  HypDim_Mix: []
+  name: hyper_dim
+granularity: 100
+midi: 40
+n: 12500
+note_length: 1.0
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
+render_length: 1.0
+root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test
+sr: 44100
+vel: 127
