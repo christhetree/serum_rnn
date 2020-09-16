@@ -273,3 +273,18 @@ sf.write(
 # print('inv')
 # audio = lr.feature.inverse.mel_to_audio(square_dist_mel, sr=sr, n_fft=n_fft, hop_length=hop_length)
 # sf.write('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/square__dist_inv_256.wav', audio, sr)
+
+
+i = 1000000
+results = []
+for _ in range(i):
+    goal = 0.0
+    # goal = np.random.uniform(0.0, 1.0)
+    guess = np.random.uniform(0.0, 1.0)
+    mae = abs(goal - guess)
+    results.append(mae)
+
+print(len(results))
+print(np.mean(results))
+print(np.std(results))
+exit()

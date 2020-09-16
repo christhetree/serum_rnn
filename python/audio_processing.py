@@ -11,7 +11,7 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR
+from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR, DATA_DIR
 from effects import get_effect, param_to_type, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 
@@ -244,7 +244,7 @@ def generate_y(path: str,
 
     effect_dir_info = parse_save_name(effect_dir_name)
     granularity = effect_dir_info['gran']
-    effect_names = effect_dir_info['name'].split('_')
+    effect_names = effect_dir_info['name'].split('_')  # TODO
     log.info(f'Using granularity of {granularity}')
     log.info(f'{effect_names} effects found.')
 
@@ -356,8 +356,22 @@ def generate_y(path: str,
 
 if __name__ == '__main__':
     process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
-    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_1414.npz',
-    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/flanger__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_256__norm_audio_F__norm_mel_T__n_14000.npz',
-    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
-    # generate_y('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/distortion__gran_1000/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_256__hop_len_512__norm_audio_F__norm_mel_T__n_14014.npz',
-    #            params=[97, 99])
+    # n = 14014
+    # n = 25000
+    # gran = 1000
+    # gran = 100
+    # effect = 'distortion'
+    # params = {97, 99}
+    # effect = 'eq'
+    # params = {88, 89, 90, 91, 92, 93, 94, 95}
+    # effect = 'filter'
+    # params = {142, 143, 144, 145, 146, 268}
+    # effect = 'flanger'
+    # params = {105, 106, 107, 108}
+    # effect = 'phaser'
+    # params = {111, 112, 113, 114, 115}
+    # effect = 'reverb_hall'
+    # params = {82, 83, 84, 85, 86, 87}
+
+    # generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
+    #            params=params)
