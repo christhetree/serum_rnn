@@ -1,0 +1,14 @@
+effects:
+- Dist_Drv: [250, 500, 750, 1000]
+  Dist_Mode: []
+  name: distortion
+gran: 1000
+midi: 40
+n: -1
+max_n: -1
+note_length: 1.0
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
+render_length: 1.0
+root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_test_data
+sr: 44100
+vel: 127

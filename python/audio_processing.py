@@ -11,7 +11,7 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR, DATA_DIR
+from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, DATA_DIR
 from effects import get_effect, param_to_type, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 
@@ -120,7 +120,7 @@ def process_audio(process_config_path: str) -> None:
 
     npz_names = []
     for npz_name in os.listdir(save_dir):
-        if npz_name.startswith(save_name):
+        if npz_name.startswith(save_name) and '__y_' not in npz_name:  # TODO
             npz_names.append(npz_name)
 
     assert len(npz_names) < 2
@@ -201,15 +201,18 @@ def process_audio(process_config_path: str) -> None:
     log.info(f'Saving new npz file: {new_npz_name}')
     np.savez(os.path.join(save_dir, new_npz_name),
              render_names=proc_render_names,
-             mels=mels)
+             mels=mels,
+             process_config=dict(pc._asdict()))
 
     if existing_npz_name:
         log.info(f'Deleting prev npz file: {existing_npz_name}')
         os.remove(os.path.join(save_dir, existing_npz_name))
 
 
-def parse_save_name(save_name: str) -> Dict[str, Union[int, float, bool]]:
-    save_name = os.path.splitext(save_name.strip())[0]  # Get rid of file ext.
+def parse_save_name(save_name: str,
+                    is_dir: bool = False) -> Dict[str, Union[int, float, bool]]:
+    if not is_dir:
+        save_name = os.path.splitext(save_name.strip())[0]  # Delete file ext.
     tokens = save_name.split('__')
     name = tokens[0]
     result = {'name': name}
@@ -242,10 +245,10 @@ def generate_y(path: str,
     log.info(f'.npz file name: {data_npz_name}')
     log.info(f'Effect dir name: {effect_dir_name}')
 
-    effect_dir_info = parse_save_name(effect_dir_name)
-    granularity = effect_dir_info['gran']
+    effect_dir_info = parse_save_name(effect_dir_name, is_dir=True)
+    gran = effect_dir_info['gran']
     effect_names = effect_dir_info['name'].split('_')  # TODO
-    log.info(f'Using granularity of {granularity}')
+    log.info(f'Using granularity of {gran}')
     log.info(f'{effect_names} effects found.')
 
     if params is None:
@@ -270,13 +273,13 @@ def generate_y(path: str,
     log.info(f'Categorical params: {categorical_params}')
     log.info(f'Continuous params: {continuous_params}')
 
-    data = np.load(path)
+    data = np.load(path, allow_pickle=True)
     render_names = data['render_names'].tolist()
     log.info(f'{len(render_names)} renders found in {data_npz_name}')
     y = defaultdict(list)
 
     for render_name in tqdm(render_names):
-        render_name_info = parse_save_name(render_name)
+        render_name_info = parse_save_name(render_name, is_dir=False)
         render_name_params = {}
         for desc, value in render_name_info.items():
             if desc == 'name':
@@ -309,7 +312,7 @@ def generate_y(path: str,
         cont_values = []
         for param in continuous_params:
             if param in render_name_params:
-                cont_values.append(render_name_params[param] / granularity)
+                cont_values.append(render_name_params[param] / gran)
             else:
                 effect = param_to_effect[param]
                 cont_values.append(effect.default[param])
@@ -318,6 +321,7 @@ def generate_y(path: str,
             y['continuous'].append(cont_values)
 
     y = dict(y)
+    y['gran'] = gran
 
     log.info('Converting to ndarray.')
     for key in tqdm(y):
@@ -355,15 +359,18 @@ def generate_y(path: str,
 
 
 if __name__ == '__main__':
-    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
-    # n = 14014
+    # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    # exit()
+
+    # n = 56
+    n = 324
     # n = 25000
     # gran = 1000
-    # gran = 100
+    gran = 100
     # effect = 'distortion'
     # params = {97, 99}
-    # effect = 'eq'
-    # params = {88, 89, 90, 91, 92, 93, 94, 95}
+    effect = 'eq'
+    params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
     # effect = 'flanger'
@@ -374,4 +381,5 @@ if __name__ == '__main__':
     # params = {82, 83, 84, 85, 86, 87}
 
     # generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
-    #            params=params)
+    generate_y(os.path.join(DATA_DIR, f'audio_test_data/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
+               params=params)

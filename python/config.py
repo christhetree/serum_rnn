@@ -8,8 +8,9 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 # Paths
 ROOT_DIR = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
 
-OUT_DIR = os.path.join(ROOT_DIR, 'out')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
+MODELS_DIR = os.path.join(ROOT_DIR, 'models')
+OUT_DIR = os.path.join(ROOT_DIR, 'out')
 
 CONFIGS_DIR = os.path.join(DATA_DIR, 'configs')
 PRESETS_DIR = os.path.join(DATA_DIR, 'presets')

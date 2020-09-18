@@ -1,16 +1,16 @@
 import logging
 import ntpath
 import os
-from collections import namedtuple
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 
+import librenderman as rm
 import numpy as np
 import soundfile as sf
 import yaml
 from tqdm import tqdm
 
 from effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC
-from python.config import RM_SR, CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
+from python.config import CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
     MAX_DUPLICATES
 from serum_util import setup_serum, set_preset
 
@@ -18,10 +18,32 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-RenderConfig = namedtuple(
-    'RenderConfig',
-    'root_dir n max_n preset sr note_length render_length midi vel gran effects'
-)
+
+class RenderConfig:
+    def __init__(self,
+                 preset: str,
+                 sr: int,
+                 note_length: float,
+                 render_length: float,
+                 midi: int,
+                 vel: int,
+                 gran: int,
+                 n: int = -1,
+                 max_n: int = -1,
+                 root_dir: Optional[str] = None,
+                 effects: List[Dict[str, Any]] = []) -> None:
+        super().__init__()
+        self.root_dir = root_dir
+        self.n = n
+        self.max_n = max_n
+        self.preset = preset
+        self.sr = sr
+        self.note_length = note_length
+        self.render_length = render_length
+        self.midi = midi
+        self.vel = vel
+        self.gran = gran
+        self.effects = effects
 
 
 class PatchGenerator:
@@ -106,6 +128,8 @@ class PatchGenerator:
         self.param_defaults = param_defaults
         self.default_diff = default_diff
         self.curr_patch = curr_patch
+        self.param_n_digits = {k: len(str(v))
+                               for k, v in self.param_n_choices.items()}
 
     def generate_random_patch(
             self,
@@ -190,6 +214,26 @@ def generate_render_hash(effect_names: List[str],
     return render_hash
 
 
+def render_patch(engine: rm.RenderEngine,
+                 patch: Dict[int, float],
+                 rc: RenderConfig,
+                 save_dir: Optional[str],
+                 render_name: Optional[str]) -> np.ndarray:
+    set_preset(engine, patch)
+    engine.render_patch(rc.midi,
+                        rc.vel,
+                        rc.note_length,
+                        rc.render_length,
+                        False)
+    audio = np.array(engine.get_audio_frames(), dtype=np.float64)
+
+    if save_dir and render_name:
+        save_path = os.path.join(save_dir, render_name)
+        sf.write(save_path, audio, rc.sr)
+
+    return audio
+
+
 def render_audio(render_config_path: str,
                  max_duplicates_in_a_row: int = MAX_DUPLICATES) -> None:
     with open(render_config_path, 'r') as config_f:
@@ -243,8 +287,6 @@ def render_audio(render_config_path: str,
     log.info(f'{init_n_renders} existing renders found.')
 
     engine = setup_serum(rc.preset, sr=rc.sr, render_once=True)
-    param_n_digits = {k: len(str(v))
-                      for k, v in patch_gen.param_n_choices.items()}
 
     log.info(f'{patch_gen.n_combos} no. of possible rendering combos.')
     log.info(f'{effect_names} effects in patch generator.')
@@ -271,20 +313,16 @@ def render_audio(render_config_path: str,
         for default_diff, patch in patch_gen.generate_all_combos():
             render_name = generate_render_hash(effect_names,
                                                default_diff,
-                                               param_n_digits)
+                                               patch_gen.param_n_digits)
 
             if render_name in render_names:
                 log.debug(f'Duplicate render generated: {render_name}')
             else:
-                set_preset(engine, patch)
-                engine.render_patch(rc.midi,
-                                    rc.vel,
-                                    rc.note_length,
-                                    rc.render_length,
-                                    False)
-                audio = np.array(engine.get_audio_frames(), dtype=np.float64)
-                save_path = os.path.join(save_dir, render_name)
-                sf.write(save_path, audio, RM_SR)
+                render_patch(engine,
+                             patch,
+                             rc,
+                             save_dir,
+                             render_name)
 
                 render_names.add(render_name)
 
@@ -297,7 +335,7 @@ def render_audio(render_config_path: str,
             default_diff, patch = patch_gen.generate_random_patch()
             render_name = generate_render_hash(effect_names,
                                                default_diff,
-                                               param_n_digits)
+                                               patch_gen.param_n_digits)
 
             if render_name in render_names:
                 duplicates_in_a_row += 1
@@ -307,15 +345,11 @@ def render_audio(render_config_path: str,
                     log.warning('Too many duplicates generated in a row.')
                     break
             else:
-                set_preset(engine, patch)
-                engine.render_patch(rc.midi,
-                                    rc.vel,
-                                    rc.note_length,
-                                    rc.render_length,
-                                    False)
-                audio = np.array(engine.get_audio_frames(), dtype=np.float64)
-                save_path = os.path.join(save_dir, render_name)
-                sf.write(save_path, audio, RM_SR)
+                render_patch(engine,
+                             patch,
+                             rc,
+                             save_dir,
+                             render_name)
 
                 render_names.add(render_name)
                 n_rendered += 1
@@ -324,4 +358,4 @@ def render_audio(render_config_path: str,
 
 
 if __name__ == '__main__':
-    render_audio(os.path.join(CONFIGS_DIR, 'rendering/chorus_render.yaml'))
+    render_audio(os.path.join(CONFIGS_DIR, 'rendering/eq_test.yaml'))

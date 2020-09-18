@@ -22,8 +22,8 @@ if physical_devices:
     tf.config.experimental.set_visible_devices(physical_devices[GPU], 'GPU')
     # tf.config.experimental.set_memory_growth(physical_devices[GPU], enable=True)
 
-YData = namedtuple(
-    'YData',
+YModelData = namedtuple(
+    'YModelData',
     'n_bin n_cate cate_names n_cont y_s y_losses metrics'
 )
 
@@ -61,7 +61,7 @@ def train_model(
               verbose=1)
 
 
-def prepare_y_data(y_data_path: str) -> YData:
+def prepare_y_model_data(y_data_path: str) -> YModelData:
     y_npz_data = np.load(y_data_path)
 
     n_bin = 0
@@ -112,15 +112,15 @@ def prepare_y_data(y_data_path: str) -> YData:
     log.info(f'y_losses = {y_losses}')
     log.info(f'metrics = {metrics}')
 
-    y_data = YData(n_bin=n_bin,
-                   n_cate=n_cate,
-                   cate_names=cate_names,
-                   n_cont=n_cont,
-                   y_s=y_s,
-                   y_losses=y_losses,
-                   metrics=metrics)
+    y_model_data = YModelData(n_bin=n_bin,
+                              n_cate=n_cate,
+                              cate_names=cate_names,
+                              n_cont=n_cont,
+                              y_s=y_s,
+                              y_losses=y_losses,
+                              metrics=metrics)
 
-    return y_data
+    return y_model_data
 
 
 if __name__ == '__main__':
@@ -162,7 +162,7 @@ if __name__ == '__main__':
     log.info(f'in_x = {in_x}, in_y = {in_y}')
 
     y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_{params}.npz'
-    y_data = prepare_y_data(y_data_path)
+    y_data = prepare_y_model_data(y_data_path)
 
     model = build_effect_model(in_x,
                                in_y,
