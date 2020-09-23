@@ -1,15 +1,10 @@
 effects:
-- Verb Wet: [50]
-  VerbSize: []
-  Decay: []
-  VerbLoCt: []
-  Spin Rate: []
-  VerbHiCt: []
-  Spin Depth: []
-  name: reverb_hall
-gran: 100
+  - Dist_Drv: []
+    Dist_Mode: []
+    name: distortion
+gran: 1000
 midi: 40
-n: 12500
+n: -1
 max_n: -1
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp

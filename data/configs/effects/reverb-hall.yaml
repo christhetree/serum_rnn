@@ -18,4 +18,4 @@ default:
   86: 0.35  # VerbHiCt
   87: 0.2   # Spin Depth
   160: 1.0  # Rev Enable, changed
-name: reverb_hall
+name: reverb-hall

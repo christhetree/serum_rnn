@@ -128,6 +128,8 @@ if __name__ == '__main__':
     n = 25000
     # gran = 1000
     gran = 100
+    effect = 'chorus'
+    params = {118, 119, 120, 121, 122, 123}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
@@ -138,8 +140,8 @@ if __name__ == '__main__':
     # params = {105, 106, 107, 108}
     # effect = 'phaser'
     # params = {111, 112, 113, 114, 115}
-    effect = 'reverb_hall'
-    params = {82, 83, 84, 85, 86, 87}
+    # effect = 'reverb-hall'
+    # params = {82, 83, 84, 85, 86, 87}
 
     architecture = baseline_cnn
     # architecture = exposure_cnn

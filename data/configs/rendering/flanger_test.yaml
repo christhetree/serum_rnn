@@ -1,8 +1,10 @@
 effects:
-  - Dist_Drv: []
-    Dist_Mode: []
-    name: distortion
-gran: 1000
+  - Flg_Dep: []
+    Flg_Feed: []
+    Flg_Rate: []
+    Flg_Stereo: []
+    name: flanger
+gran: 100
 midi: 40
 n: 1000
 max_n: 1000
@@ -10,5 +12,7 @@ note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0
 root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_test_data
+exclude_dirs:
+  - /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/flanger__gran_100/renders
 sr: 44100
 vel: 127

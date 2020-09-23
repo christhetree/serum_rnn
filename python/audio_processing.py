@@ -11,7 +11,7 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, DATA_DIR
+from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, DATA_DIR, CONFIGS_DIR
 from effects import get_effect, param_to_type, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 
@@ -359,25 +359,27 @@ def generate_y(path: str,
 
 
 if __name__ == '__main__':
-    # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
     # exit()
 
     # n = 56
-    n = 324
+    n = 1000
     # n = 25000
     # gran = 1000
     gran = 100
+    effect = 'chorus'
+    params = {118, 119, 120, 121, 122, 123}
     # effect = 'distortion'
     # params = {97, 99}
-    effect = 'eq'
-    params = {88, 89, 90, 91, 92, 93, 94, 95}
+    # effect = 'eq'
+    # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
     # effect = 'flanger'
     # params = {105, 106, 107, 108}
     # effect = 'phaser'
     # params = {111, 112, 113, 114, 115}
-    # effect = 'reverb_hall'
+    # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
 
     # generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),

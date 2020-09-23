@@ -1,13 +1,16 @@
 effects:
-- Flg_Dep: []
-  Flg_Feed: []
-  Flg_Rate: []
-  Flg_Stereo: []
-  name: flanger
+  - Verb Wet: [50]
+    VerbSize: []
+    Decay: []
+    VerbLoCt: []
+    Spin Rate: []
+    VerbHiCt: []
+    Spin Depth: []
+    name: reverb-hall
 gran: 100
 midi: 40
-n: 1
-max_n: -1
+n: 25000
+max_n: 25000
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0

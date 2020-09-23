@@ -16,7 +16,7 @@ from serum_util import setup_serum, set_preset
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
-log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
+log.setLevel(level=os.environ.get('LOGLEVEL', 'DEBUG'))
 
 
 class RenderConfig:
@@ -31,9 +31,11 @@ class RenderConfig:
                  n: int = -1,
                  max_n: int = -1,
                  root_dir: Optional[str] = None,
+                 exclude_dirs: List[str] = [],
                  effects: List[Dict[str, Any]] = []) -> None:
         super().__init__()
         self.root_dir = root_dir
+        self.exclude_dirs = exclude_dirs
         self.n = n
         self.max_n = max_n
         self.preset = preset
@@ -283,8 +285,8 @@ def render_audio(render_config_path: str,
         if render_name.endswith('.wav'):
             render_names.add(render_name)
 
-    init_n_renders = len(render_names)
-    log.info(f'{init_n_renders} existing renders found.')
+    n_existing_renders = len(render_names)
+    log.info(f'{n_existing_renders} existing renders found.')
 
     engine = setup_serum(rc.preset, sr=rc.sr, render_once=True)
 
@@ -303,9 +305,21 @@ def render_audio(render_config_path: str,
     else:
         n_to_render = rc.n
 
-    if n_to_render > 0 and 0 < rc.max_n < init_n_renders + n_to_render:
-        n_to_render = max(0, rc.max_n - init_n_renders)
+    if n_to_render > 0 and 0 < rc.max_n < n_existing_renders + n_to_render:
+        n_to_render = max(0, rc.max_n - n_existing_renders)
         log.info(f'n reduced to {n_to_render} due to max n of {rc.max_n}')
+
+    for exclude_dir in rc.exclude_dirs:
+        log.info(f'Excluding renders in {exclude_dir}')
+        n_existing_renders = len(render_names)
+        for render_name in os.listdir(exclude_dir):
+            if render_name.endswith('.wav'):
+                render_names.add(render_name)
+
+        n_increase = len(render_names) - n_existing_renders
+        if n_increase > 0:
+            log.info(f'Existing renders increased by {n_increase} to '
+                     f'{len(render_names)}')
 
     if n_to_render == -1:
         pbar = tqdm(total=patch_gen.n_combos)
@@ -358,4 +372,10 @@ def render_audio(render_config_path: str,
 
 
 if __name__ == '__main__':
-    render_audio(os.path.join(CONFIGS_DIR, 'rendering/eq_test.yaml'))
+    render_audio(os.path.join(CONFIGS_DIR, 'rendering/chorus_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/distortion_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/eq_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/filter_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/flanger_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/phaser_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/reverb-hall_test.yaml'))

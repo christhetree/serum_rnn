@@ -1,0 +1,21 @@
+effects:
+  - Verb Wet: [50]
+    VerbSize: []
+    Decay: []
+    VerbLoCt: []
+    Spin Rate: []
+    VerbHiCt: []
+    Spin Depth: []
+    name: reverb-hall
+gran: 100
+midi: 40
+n: 1000
+max_n: 1000
+note_length: 1.0
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
+render_length: 1.0
+root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_test_data
+exclude_dirs:
+  - /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/reverb-hall__gran_100/renders
+sr: 44100
+vel: 127

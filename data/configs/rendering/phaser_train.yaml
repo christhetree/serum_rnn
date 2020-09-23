@@ -1,17 +1,14 @@
 effects:
-- EQ FrqL: []
-  EQ FrqH: []
-  EQ Q L: []
-  EQ Q H: []
-  EQ VolL: []
-  EQ VolH: []
-  EQ TypL: []
-  EQ TypH: []
-  name: eq
+  - Phs_Rate: []
+    Phs_Dpth: []
+    Phs_Frq: []
+    Phs_Feed: []
+    Phs_Stereo: []
+    name: phaser
 gran: 100
 midi: 40
-n: 12500
-max_n: -1
+n: 25000
+max_n: 25000
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0

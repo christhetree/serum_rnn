@@ -1,11 +1,15 @@
 effects:
-- Dist_Drv: []
-  Dist_Mode: []
-  name: distortion
+  - FX Fil Type: []
+    FX Fil Freq: []
+    FX Fil Reso: []
+    FX Fil Drive: []
+    FX Fil Var: []
+    FX Fil Pan: []
+    name: filter
 gran: 100
 midi: 40
-n: -1
-max_n: -1
+n: 25000
+max_n: 25000
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0

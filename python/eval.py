@@ -2,6 +2,7 @@ import logging
 import os
 
 import numpy as np
+import soundfile as sf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from tensorflow.keras import Model
 from tensorflow.keras.models import load_model
@@ -28,7 +29,7 @@ def eval_model(model_path: str,
                reg_eval: bool = True,
                granular_eval: bool = True,
                mel_eval: bool = True,
-               save_pred_renders: bool = False) -> None:
+               save_pred_renders: bool = True) -> None:
     x_npz_data = np.load(x_data_path, allow_pickle=True)
     x = x_npz_data['mels']
     in_x = x.shape[1]
@@ -58,6 +59,8 @@ def eval_model(model_path: str,
         return
 
     pred = model.predict(x, batch_size=batch_size, verbose=1)
+    if not isinstance(pred, list):
+        pred = [pred]
 
     if granular_eval:
         log.info(f'Starting granular evaluation:')
@@ -99,7 +102,7 @@ def eval_model(model_path: str,
                           midi=int_dir_info['midi'],
                           gran=effect_dir_info['gran'],
                           preset=preset_path)
-        log.info(f'render config = {rc}')
+        log.info(f'render config = {rc.__dict__}')
 
         engine = setup_serum(rc.preset, sr=rc.sr, render_once=True)
 
@@ -134,10 +137,10 @@ def eval_model(model_path: str,
         n_perfect_pred = 0
         render_names = x_npz_data['render_names']
 
-        pred_render_save_dir = os.path.join(pc.root_dir, 'eval')
-        if not os.path.exists(pred_render_save_dir):
+        pred_save_dir = os.path.join(pc.root_dir, 'eval')
+        if save_pred_renders and not os.path.exists(pred_save_dir):
             log.info('Creating eval folder.')
-            os.makedirs(pred_render_save_dir)
+            os.makedirs(pred_save_dir)
 
         for idx in tqdm(range(len(x))):
             render_name = render_names[idx]
@@ -189,16 +192,11 @@ def eval_model(model_path: str,
             if render_name == pred_render_name:
                 n_perfect_pred += 1
 
-            if save_pred_renders:
-                save_render_name = f'{render_name}____{pred_render_name}'
-            else:
-                save_render_name = None
-
             pred_audio = render_patch(engine,
                                       patch,
                                       rc,
-                                      pred_render_save_dir,
-                                      save_render_name)
+                                      save_dir=None,
+                                      render_name=None)
 
             pred_mel = get_mel_spec(pred_audio,
                                     sr=pc.sr,
@@ -214,6 +212,13 @@ def eval_model(model_path: str,
             mae = mean_absolute_error(mel, pred_mel)
             mel_maes.append(mae)
 
+            if save_pred_renders:
+                save_render_name = f'{render_name}___{pred_render_name}' \
+                                   f'___mse_{mse:.4f}__mae_{mae:.4f}.wav'
+                save_path = os.path.join(pred_save_dir, save_render_name)
+                sf.write(save_path, pred_audio, rc.sr)
+
+
         mel_mses = np.array(mel_mses)
         mel_maes = np.array(mel_maes)
         log.info(f'n_perfect_pred = {n_perfect_pred}')
@@ -227,21 +232,23 @@ def eval_model(model_path: str,
 if __name__ == '__main__':
     # n = 14014
     # n = 56
-    n = 324
+    n = 1000
     # n = 25000
     # gran = 1000
     gran = 100
+    effect = 'chorus'
+    params = {118, 119, 120, 121, 122, 123}
     # effect = 'distortion'
     # params = {97, 99}
-    effect = 'eq'
-    params = {88, 89, 90, 91, 92, 93, 94, 95}
+    # effect = 'eq'
+    # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
     # effect = 'flanger'
     # params = {105, 106, 107, 108}
     # effect = 'phaser'
     # params = {111, 112, 113, 114, 115}
-    # effect = 'reverb_hall'
+    # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
 
     architecture = baseline_cnn
