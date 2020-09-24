@@ -359,16 +359,16 @@ def generate_y(path: str,
 
 
 if __name__ == '__main__':
-    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
     # exit()
 
     # n = 56
-    n = 1000
-    # n = 25000
+    # n = 1000
+    n = 25000
     # gran = 1000
     gran = 100
-    effect = 'chorus'
-    params = {118, 119, 120, 121, 122, 123}
+    # effect = 'chorus'
+    # params = {118, 119, 120, 121, 122, 123}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
@@ -381,7 +381,9 @@ if __name__ == '__main__':
     # params = {111, 112, 113, 114, 115}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
+    effect = 'distortion_phaser'
+    params = {111, 112, 113, 114, 115}
 
-    # generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
-    generate_y(os.path.join(DATA_DIR, f'audio_test_data/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
+    generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
+    # generate_y(os.path.join(DATA_DIR, f'audio_test_data/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
                params=params)

@@ -1,0 +1,20 @@
+effects:
+  - Dist_Drv: []
+    Dist_Mode: []
+    name: distortion
+  - Phs_Rate: [ ]
+    Phs_Dpth: [ ]
+    Phs_Frq: [ ]
+    Phs_Feed: [ ]
+    Phs_Stereo: [ ]
+    name: phaser
+gran: 100
+midi: 40
+n: 25000
+max_n: 25000
+note_length: 1.0
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
+render_length: 1.0
+root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/audio_render_test
+sr: 44100
+vel: 127

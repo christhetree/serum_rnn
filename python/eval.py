@@ -180,9 +180,9 @@ def eval_model(model_path: str,
             pg = PatchGenerator(rc)
             assert pg.n_combos == 1
 
-            for effect_render_data in rc.effects:
-                effect = get_effect(effect_render_data['name'])
-                set_preset(engine, effect.default)
+            for effect_name in rc.effect_names():
+                effect = get_effect(effect_name)
+                set_preset(engine, effect.default)  # TODO: set base default
 
             default_diff, patch = list(pg.generate_all_combos())[0]
             pred_render_name = generate_render_hash(pg.effect_names,

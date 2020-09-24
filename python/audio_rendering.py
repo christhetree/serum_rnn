@@ -1,7 +1,7 @@
 import logging
 import ntpath
 import os
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Set
 
 import librenderman as rm
 import numpy as np
@@ -9,14 +9,15 @@ import soundfile as sf
 import yaml
 from tqdm import tqdm
 
-from effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC
+from audio_processing import parse_save_name
+from effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC, param_to_effect
 from python.config import CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
     MAX_DUPLICATES
 from serum_util import setup_serum, set_preset
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
-log.setLevel(level=os.environ.get('LOGLEVEL', 'DEBUG'))
+log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 
 class RenderConfig:
@@ -46,6 +47,9 @@ class RenderConfig:
         self.vel = vel
         self.gran = gran
         self.effects = effects
+
+    def effect_names(self) -> List[str]:
+        return sorted(list({e['name'] for e in self.effects}))
 
 
 class PatchGenerator:
@@ -236,12 +240,10 @@ def render_patch(engine: rm.RenderEngine,
     return audio
 
 
-def render_audio(render_config_path: str,
-                 max_duplicates_in_a_row: int = MAX_DUPLICATES) -> None:
-    with open(render_config_path, 'r') as config_f:
-        render_config = yaml.full_load(config_f)
-
-    rc = RenderConfig(**render_config)
+def _create_save_dir(rc: RenderConfig,
+                     create_dirs: bool = True) -> str:
+    if not create_dirs:
+        assert os.path.exists(rc.root_dir)
 
     if not os.path.exists(rc.root_dir):
         log.info(f'Making new dir for {rc.root_dir}')
@@ -254,21 +256,25 @@ def render_audio(render_config_path: str,
                    f'{rc.render_length:.2f}__vel_{rc.vel:03}__midi_{rc.midi:03}'
 
     save_dir = os.path.join(rc.root_dir, int_dir_name)
+    if not create_dirs:
+        assert os.path.exists(save_dir)
+
     if not os.path.exists(save_dir):
         log.info(f'Making new dir for {int_dir_name}')
         os.makedirs(save_dir)
     else:
         log.info(f'Save dir {int_dir_name} already exists.')
 
-    patch_gen = PatchGenerator(rc)
-    effect_names = patch_gen.effect_names
-    if not effect_names:
+    if not rc.effect_names():
         effect_dir_name = 'dry'
     else:
-        effect_dir_name = '_'.join(effect_names)
+        effect_dir_name = '_'.join(rc.effect_names())
     effect_dir_name = f'{effect_dir_name}__gran_{rc.gran}'
 
     save_dir = os.path.join(save_dir, effect_dir_name)
+    if not create_dirs:
+        assert os.path.exists(save_dir)
+
     if not os.path.exists(save_dir):
         log.info(f'Making new dir for {effect_dir_name}')
         os.makedirs(save_dir)
@@ -276,30 +282,51 @@ def render_audio(render_config_path: str,
         log.info(f'Save dir {effect_dir_name} already exists.')
 
     save_dir = os.path.join(save_dir, 'renders')
-    if not os.path.exists(save_dir):
+    if not create_dirs:
+        assert os.path.exists(save_dir)
+
+    if create_dirs and not os.path.exists(save_dir):
         log.info('Making new dir for renders.')
         os.makedirs(save_dir)
 
-    render_names = set()
-    for render_name in os.listdir(save_dir):
-        if render_name.endswith('.wav'):
-            render_names.add(render_name)
+    return save_dir
 
+
+def _get_render_names(renders_dir: str, assert_unique: bool = True) -> Set[str]:
+    render_names = set()
+    for render_name in os.listdir(renders_dir):
+        if render_name.endswith('.wav'):
+            if assert_unique:
+                assert render_name not in render_names
+            render_names.add(render_name)
+    return render_names
+
+
+def render_audio(render_config_path: str,
+                 max_duplicates_in_a_row: int = MAX_DUPLICATES) -> None:
+    with open(render_config_path, 'r') as config_f:
+        render_config = yaml.full_load(config_f)
+
+    rc = RenderConfig(**render_config)
+    pg = PatchGenerator(rc)
+    assert rc.effect_names() == pg.effect_names
+    save_dir = _create_save_dir(rc, create_dirs=True)
+
+    render_names = _get_render_names(save_dir, assert_unique=True)
     n_existing_renders = len(render_names)
     log.info(f'{n_existing_renders} existing renders found.')
 
     engine = setup_serum(rc.preset, sr=rc.sr, render_once=True)
 
-    log.info(f'{patch_gen.n_combos} no. of possible rendering combos.')
-    log.info(f'{effect_names} effects in patch generator.')
+    log.info(f'{pg.n_combos} no. of possible rendering combos.')
+    log.info(f'{pg.effect_names} effects in patch generator.')
 
-    if rc.effects is not None:
-        for effect_render_data in rc.effects:
-            effect = get_effect(effect_render_data['name'])
-            log.info(f'Setting default {effect.name} params.')
-            set_preset(engine, effect.default)
+    for effect_name in pg.effect_names:
+        effect = get_effect(effect_name)
+        log.info(f'Setting default {effect.name} params.')
+        set_preset(engine, effect.default)
 
-    if rc.n > 0 and RANDOM_GEN_THRESHOLD * rc.n > patch_gen.n_combos:
+    if rc.n > 0 and RANDOM_GEN_THRESHOLD * rc.n > pg.n_combos:
         log.warning(f'n of {rc.n} is too big, so generating all combos.')
         n_to_render = -1
     else:
@@ -322,12 +349,12 @@ def render_audio(render_config_path: str,
                      f'{len(render_names)}')
 
     if n_to_render == -1:
-        pbar = tqdm(total=patch_gen.n_combos)
+        pbar = tqdm(total=pg.n_combos)
 
-        for default_diff, patch in patch_gen.generate_all_combos():
-            render_name = generate_render_hash(effect_names,
+        for default_diff, patch in pg.generate_all_combos():
+            render_name = generate_render_hash(pg.effect_names,
                                                default_diff,
-                                               patch_gen.param_n_digits)
+                                               pg.param_n_digits)
 
             if render_name in render_names:
                 log.debug(f'Duplicate render generated: {render_name}')
@@ -346,10 +373,10 @@ def render_audio(render_config_path: str,
         duplicates_in_a_row = 0
         pbar = tqdm(total=n_to_render)
         while n_rendered < n_to_render:
-            default_diff, patch = patch_gen.generate_random_patch()
-            render_name = generate_render_hash(effect_names,
+            default_diff, patch = pg.generate_random_patch()
+            render_name = generate_render_hash(pg.effect_names,
                                                default_diff,
-                                               patch_gen.param_n_digits)
+                                               pg.param_n_digits)
 
             if render_name in render_names:
                 duplicates_in_a_row += 1
@@ -371,11 +398,116 @@ def render_audio(render_config_path: str,
                 pbar.update(1)
 
 
+def render_base_audio(orig_rc_path: str,
+                      exclude_effects: Set[str] = set(),
+                      exclude_params: Set[int] = set()) -> None:
+    exclude_descs = set()
+    for effect_name in exclude_effects:
+        effect = get_effect(effect_name)
+        for param in effect.order:
+            exclude_params.add(param)
+            desc = PARAM_TO_DESC[param]
+            exclude_descs.add(desc)
+
+    for param in exclude_params:
+        desc = PARAM_TO_DESC[param]
+        exclude_descs.add(desc)
+
+    log.info(f'Exclude effects = {exclude_effects}')
+    log.info(f'Exclude params = {exclude_params}')
+    log.info(f'Exclude descs = {exclude_descs}')
+
+    with open(orig_rc_path, 'r') as config_f:
+        render_config = yaml.full_load(config_f)
+
+    orig_rc = RenderConfig(**render_config)
+    orig_save_dir = _create_save_dir(orig_rc, create_dirs=False)
+    log.info(f'Original save dir = {orig_save_dir}')
+
+    orig_render_names = _get_render_names(orig_save_dir, assert_unique=True)
+    log.info(f'{len(orig_render_names)} existing original renders found.')
+
+    with open(orig_rc_path, 'r') as config_f:
+        render_config = yaml.full_load(config_f)
+
+    rc = RenderConfig(**render_config)
+    for desc in exclude_descs:
+        for effect in rc.effects:
+            if desc in effect:
+                del effect[desc]
+
+    rc.effects = list(filter(lambda e: len(e) > 1, rc.effects))
+    base_effect_names = rc.effect_names()
+    log.info(f'{base_effect_names} effects in base render config.')
+
+    log.info(f'Creating base renders directory.')
+    save_dir = _create_save_dir(rc, create_dirs=True)
+    log.info(f'Base save dir = {save_dir}')
+
+    base_render_names = _get_render_names(save_dir, assert_unique=True)
+    n_existing_renders = len(base_render_names)
+    log.info(f'{n_existing_renders} existing base renders found.')
+
+    engine = setup_serum(rc.preset, sr=rc.sr, render_once=True)
+
+    for effect_name in base_effect_names:
+        effect = get_effect(effect_name)
+        log.info(f'Setting default {effect.name} params.')
+        set_preset(engine, effect.default)
+
+    for orig_render_name in tqdm(orig_render_names):
+        render_info = parse_save_name(orig_render_name, is_dir=False)
+        rc_effects = {}
+        for desc, param_v in render_info.items():
+            if desc != 'name' and desc not in exclude_descs:
+                param = DESC_TO_PARAM[desc]
+                effect_name = param_to_effect[param].name
+                if effect_name not in rc_effects:
+                    rc_effects[effect_name] = {'name': effect_name}
+                rc_effect = rc_effects[effect_name]
+                rc_effect[desc] = [param_v]
+
+        rc.effects = list(rc_effects.values())
+        pg = PatchGenerator(rc)
+        assert pg.n_combos == 1
+        assert rc.effect_names() == pg.effect_names
+
+        # Using base effect names is important due to render naming convention
+        for effect_name in base_effect_names:
+            effect = get_effect(effect_name)
+            set_preset(engine, effect.default)
+
+        default_diff, patch = list(pg.generate_all_combos())[0]
+        render_name = generate_render_hash(base_effect_names,
+                                           default_diff,
+                                           pg.param_n_digits)
+
+        if render_name in base_render_names:
+            log.debug(f'Duplicate base render generated: {render_name}')
+        else:
+            render_patch(engine,
+                         patch,
+                         rc,
+                         save_dir,
+                         render_name)
+
+            base_render_names.add(render_name)
+
+    log.info(f'{len(base_render_names) - n_existing_renders} new base '
+             f'renders rendered.')
+
+
 if __name__ == '__main__':
-    render_audio(os.path.join(CONFIGS_DIR, 'rendering/chorus_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/chorus_test.yaml'))
     # render_audio(os.path.join(CONFIGS_DIR, 'rendering/distortion_test.yaml'))
     # render_audio(os.path.join(CONFIGS_DIR, 'rendering/eq_test.yaml'))
     # render_audio(os.path.join(CONFIGS_DIR, 'rendering/filter_test.yaml'))
     # render_audio(os.path.join(CONFIGS_DIR, 'rendering/flanger_test.yaml'))
     # render_audio(os.path.join(CONFIGS_DIR, 'rendering/phaser_test.yaml'))
     # render_audio(os.path.join(CONFIGS_DIR, 'rendering/reverb-hall_test.yaml'))
+    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/distortion_phaser_train.yaml'))
+    render_base_audio(os.path.join(CONFIGS_DIR,
+                                   'rendering/distortion_phaser_train.yaml'),
+                      # exclude_params={111, 112, 113, 114, 115})
+                      exclude_effects={'distortion'})
+                      # exclude_effects=set())
