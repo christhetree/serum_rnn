@@ -79,6 +79,7 @@ with open(os.path.join(CONFIGS_DIR, 'serum_param_to_desc.yaml'), 'r') as f:
 assert all(p in PARAM_TO_DESC for p in DESC_TO_PARAM.values())
 assert all(d in DESC_TO_PARAM for d in PARAM_TO_DESC.values())
 assert 'name' not in DESC_TO_PARAM
+assert all(effect_name not in DESC_TO_PARAM for effect_name in effects.keys())
 
 all_params = [p for e in effects.values() for p in e.order]
 assert len(all_params) == len(set(all_params))

@@ -1,7 +1,7 @@
 import logging
 import ntpath
 import os
-from typing import List, Dict, Optional, Any, Set
+from typing import List, Dict, Optional, Any, Set, Union
 
 import librenderman as rm
 import numpy as np
@@ -9,7 +9,6 @@ import soundfile as sf
 import yaml
 from tqdm import tqdm
 
-from audio_processing import parse_save_name
 from effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC, param_to_effect
 from python.config import CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
     MAX_DUPLICATES
@@ -195,6 +194,33 @@ class PatchGenerator:
         default_diff = {}
         patch = {}
         yield from self._set_patch_rec(self.curr_params, default_diff, patch)
+
+
+def parse_save_name(save_name: str,
+                    is_dir: bool = False) -> Dict[str, Union[int, float, bool]]:
+    if not is_dir:
+        save_name = os.path.splitext(save_name.strip())[0]  # Delete file ext.
+    tokens = save_name.split('__')
+    name = tokens[0]
+    result = {'name': name}
+
+    for token in tokens[1:]:
+        sub_tokens = token.split('_')
+        if len(sub_tokens) > 1:
+            key = '_'.join(sub_tokens[:-1])
+            value = sub_tokens[-1]
+            if '.' in value:
+                result[key] = float(value)
+            elif value == 'T':
+                result[key] = True
+            elif value == 'F':
+                result[key] = False
+            else:
+                result[key] = int(value)
+        else:
+            result[token] = True
+
+    return result
 
 
 def generate_render_hash(effect_names: List[str],
@@ -398,9 +424,8 @@ def render_audio(render_config_path: str,
                 pbar.update(1)
 
 
-def render_base_audio(orig_rc_path: str,
-                      exclude_effects: Set[str] = set(),
-                      exclude_params: Set[int] = set()) -> None:
+def _generate_exclude_descs(exclude_effects: Set[str],
+                            exclude_params: Set[int]) -> Set[str]:
     exclude_descs = set()
     for effect_name in exclude_effects:
         effect = get_effect(effect_name)
@@ -413,6 +438,13 @@ def render_base_audio(orig_rc_path: str,
         desc = PARAM_TO_DESC[param]
         exclude_descs.add(desc)
 
+    return exclude_descs
+
+
+def render_base_audio(orig_rc_path: str,
+                      exclude_effects: Set[str] = set(),
+                      exclude_params: Set[int] = set()) -> None:
+    exclude_descs = _generate_exclude_descs(exclude_effects, exclude_params)
     log.info(f'Exclude effects = {exclude_effects}')
     log.info(f'Exclude params = {exclude_params}')
     log.info(f'Exclude descs = {exclude_descs}')
