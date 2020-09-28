@@ -236,8 +236,10 @@ if __name__ == '__main__':
     # n = 25000
     # gran = 1000
     gran = 100
-    effect = 'chorus'
-    params = {118, 119, 120, 121, 122, 123}
+    # effect = 'chorus'
+    # params = {118, 119, 120, 121, 122, 123}
+    effect = 'compressor'
+    params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'

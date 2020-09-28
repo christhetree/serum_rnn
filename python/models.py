@@ -19,11 +19,11 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 def exposure_cnn(in_x: int,
                  in_y: int,
                  fc_dim: int = 128,
-                 dropout: float = 0.50) -> (Tensor, Tensor):
+                 dropout: float = 0.5) -> (Tensor, Tensor):
     log.info(f'Using fc_dim of {fc_dim}')
     log.info(f'Using dropout of {dropout}')
 
-    input_img = Input(shape=(in_x, in_y, 1))
+    input_img = Input(shape=(in_x, in_y, 2))
     x = Conv2D(32,
                (4, 4),
                strides=(2, 2),
@@ -54,11 +54,11 @@ def exposure_cnn(in_x: int,
 def baseline_cnn(in_x: int,
                  in_y: int,
                  fc_dim: int = 128,
-                 dropout: float = 0.50) -> (Tensor, Tensor):
+                 dropout: float = 0.5) -> (Tensor, Tensor):
     log.info(f'Using fc_dim of {fc_dim}')
     log.info(f'Using dropout of {dropout}')
 
-    input_img = Input(shape=(in_x, in_y, 1))
+    input_img = Input(shape=(in_x, in_y, 2))
     x = Conv2D(32,
                (3, 3),
                strides=(1, 1),
@@ -78,6 +78,41 @@ def baseline_cnn(in_x: int,
                activation='elu')(x)
     x = MaxPooling2D((4, 4))(x)
     x = Flatten()(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    fc = Dropout(dropout)(x)
+
+    return input_img, fc
+
+
+def baseline_cnn_2x(in_x: int,
+                    in_y: int,
+                    fc_dim: int = 128,
+                    dropout: float = 0.5) -> (Tensor, Tensor):
+    log.info(f'Using fc_dim of {fc_dim}')
+    log.info(f'Using dropout of {dropout}')
+
+    input_img = Input(shape=(in_x, in_y, 2))
+    x = Conv2D(64,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(input_img)
+    x = MaxPooling2D((4, 4))(x)
+    x = Conv2D(128,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((4, 4))(x)
+    x = Conv2D(128,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((4, 4))(x)
+    x = Flatten()(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    x = Dropout(dropout)(x)
     x = Dense(fc_dim, activation='elu')(x)
     fc = Dropout(dropout)(x)
 
@@ -110,43 +145,6 @@ def build_effect_model(in_x: int,
 
     assert outputs
     model = Model(input_img, outputs)
-    return model
-
-
-def build_cnn3_classifier(
-        mel_spec_x: int = 128,
-        mel_spec_y: int = 131,
-        n_reg: int = 1,
-        n_class: int = 14,
-        n_midi: int = 86,
-        dropout_rate: float = 0.50) -> Model:
-    input_midi = Input(shape=(n_midi,))
-    input_img = Input(shape=(mel_spec_x, mel_spec_y, 1))
-    x = Conv2D(32,
-               (3, 3),
-               strides=(1, 1),
-               padding='same',
-               activation='elu')(input_img)
-    x = MaxPooling2D((4, 4))(x)
-    x = Conv2D(64,
-               (3, 3),
-               strides=(1, 1),
-               padding='same',
-               activation='elu')(x)
-    x = MaxPooling2D((4, 4))(x)
-    x = Conv2D(64,
-               (3, 3),
-               strides=(1, 1),
-               padding='same',
-               activation='elu')(x)
-    x = MaxPooling2D((4, 4))(x)
-    x = Flatten()(x)
-    x = Concatenate()([x, input_midi])
-    x = Dense(128, activation='elu')(x)
-    x = Dropout(dropout_rate)(x)
-    reg_output = Dense(n_reg, activation='linear')(x)
-    class_output = Dense(n_class, activation='softmax')(x)
-    model = Model([input_img, input_midi], [reg_output, class_output])
     return model
 
 

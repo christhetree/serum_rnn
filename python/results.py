@@ -7,6 +7,15 @@
 # INFO:__main__:mean mae = 0.0508
 # INFO:__main__:std mae = 0.0318
 
+# compressor
+# INFO:__main__:{'loss': 0.0009621087228879333,
+#                'mae': 0.020053954795002937}
+# INFO:__main__:y_cont granular MAE = [0.0174068  0.02829562 0.01445946]
+# INFO:__main__:mean mse = 0.0023
+# INFO:__main__:std mse = 0.0021
+# INFO:__main__:mean mae = 0.0239
+# INFO:__main__:std mae = 0.0153
+
 # distortion
 # INFO: __main__:{'loss': 0.3983064591884613,
 #                 'dist_mode_loss': 0.36372750997543335,

@@ -9,7 +9,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from config import DATA_DIR, OUT_DIR
-from models import build_effect_model, exposure_cnn, baseline_cnn
+from models import build_effect_model, baseline_cnn_2x, baseline_cnn
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -125,13 +125,15 @@ def prepare_y_model_data(y_data_path: str) -> YModelData:
 
 if __name__ == '__main__':
     # n = 14014
-    n = 25000
+    # n = 25000
     # gran = 1000
     gran = 100
-    effect = 'chorus'
-    params = {118, 119, 120, 121, 122, 123}
-    # effect = 'distortion'
-    # params = {97, 99}
+    # effect = 'chorus'
+    # params = {118, 119, 120, 121, 122, 123}
+    # effect = 'compressor'
+    # params = {270, 271, 272}
+    effect = 'distortion'
+    params = {97, 99}
     # effect = 'eq'
     # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
@@ -142,29 +144,61 @@ if __name__ == '__main__':
     # params = {111, 112, 113, 114, 115}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
+    # effect = 'distortion_phaser'
 
-    architecture = baseline_cnn
+    # params = {88, 89, 90, 91}
+
+    # base_effects = ['distortion']
+    # base_effects = ['phaser']
+
+    # architecture = baseline_cnn
+    architecture = baseline_cnn_2x
     # architecture = exposure_cnn
     batch_size = 512
-    epochs = 128
-    val_split = 0.20
-    patience = 16
+    epochs = 100
+    val_split = 0.10
+    patience = 10
     model_name = f'{effect}_{architecture.__name__}'
+    N = 56000
 
     params = sorted([str(_) for _ in params])
     params = '_'.join(params)
 
-    x_data_path = f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'
+    # x_data_path = f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'
+    # x_data_path = 'combined_compressor_200k.npz'
+    # x_data_path = 'combined_eq_200k.npz'
+    x_data_path = 'combined_distortion_200k.npz'
     x_data_path = os.path.join(DATA_DIR, x_data_path)
     x_npz_data = np.load(x_data_path)
-    x = x_npz_data['mels']
+
+    # x_base_path = f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}___base__{"_".join(base_effects)}.npz'
+    # x_base_path = os.path.join(DATA_DIR, x_base_path)
+    # x_base_data = np.load(x_base_path)
+    # base_mels = x_base_data['mels']
+    # log.info(f'base_effects = {base_effects}')
+    # log.info(f'base_mels shape = {base_mels.shape}')
+
+    x = x_npz_data['mels'][:N]
     in_x = x.shape[1]
     in_y = x.shape[2]
     log.info(f'mels shape = {x.shape}')
     log.info(f'in_x = {in_x}, in_y = {in_y}')
 
+    base_mels = x_npz_data['base_mels'][:N]
+    log.info(f'base_mels shape = {base_mels.shape}')
+
+    x = np.concatenate([x, base_mels], axis=-1)
+    # x = np.concatenate([base_mels, x], axis=-1)
+    # x = np.concatenate([x, x], axis=-1)
+    # log.info('Using same x, x')
+    # x = np.concatenate([base_mels, base_mels], axis=-1)
+    # log.info('Using same b, b')
+    # x = x - base_mels
+    log.info(f'x shape = {x.shape}')
+
     y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_{params}.npz'
     y_data = prepare_y_model_data(y_data_path)
+    y = [out[:N] for out in y_data.y_s]
 
     model = build_effect_model(in_x,
                                in_y,

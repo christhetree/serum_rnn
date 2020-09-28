@@ -1,0 +1,39 @@
+effects:
+  - name: distortion
+    Dist_Drv: []
+    Dist_Mode: []
+  - name: flanger
+    Flg_Dep: []
+    Flg_Feed: []
+    Flg_Rate: []
+  - name: phaser
+    Phs_Rate: []
+    Phs_Dpth: []
+    Phs_Frq: []
+    Phs_Feed: []
+  - name: compressor
+    Cmp_Att: [0]
+    CmpMBnd: [1]
+    CompMB L: []
+    CompMB M: []
+    CompMB H: []
+  - name: eq
+    EQ FrqL: []
+    EQ FrqH: []
+    EQ Q L: []
+    EQ Q H: []
+    EQ VolL: [0]
+    EQ VolH: [1]
+    EQ TypL: [1]
+    EQ TypH: [1]
+gran: 100
+midi: 48
+n: 50000
+max_n: 50000
+note_length: 1.0
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/saw.fxp
+render_length: 1.0
+root_dir: /Volumes/samsung_t5/reverse_synthesis/training
+sr: 44100
+vel: 127
+use_hashes: True

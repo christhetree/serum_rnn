@@ -1,6 +1,8 @@
+import hashlib
 import logging
 import ntpath
 import os
+from itertools import combinations
 from typing import List, Dict, Optional, Any, Set, Union
 
 import librenderman as rm
@@ -9,10 +11,10 @@ import soundfile as sf
 import yaml
 from tqdm import tqdm
 
+from config import CONFIGS_DIR, RANDOM_GEN_THRESHOLD, MAX_DUPLICATES
 from effects import DESC_TO_PARAM, get_effect, PARAM_TO_DESC, param_to_effect
-from python.config import CONFIGS_DIR, RANDOM_GEN_THRESHOLD, \
-    MAX_DUPLICATES
 from serum_util import setup_serum, set_preset
+from util import get_render_names, generate_exclude_descs, parse_save_name
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -31,9 +33,14 @@ class RenderConfig:
                  n: int = -1,
                  max_n: int = -1,
                  root_dir: Optional[str] = None,
-                 exclude_dirs: List[str] = [],
-                 effects: List[Dict[str, Any]] = []) -> None:
+                 exclude_dirs: List[str] = None,
+                 effects: List[Dict[str, Any]] = None,
+                 use_hashes: bool = False) -> None:
         super().__init__()
+        if effects is None:
+            effects = []
+        if exclude_dirs is None:
+            exclude_dirs = []
         self.root_dir = root_dir
         self.exclude_dirs = exclude_dirs
         self.n = n
@@ -46,6 +53,7 @@ class RenderConfig:
         self.vel = vel
         self.gran = gran
         self.effects = effects
+        self.use_hashes = use_hashes
 
     def effect_names(self) -> List[str]:
         return sorted(list({e['name'] for e in self.effects}))
@@ -140,6 +148,9 @@ class PatchGenerator:
             self,
             n_changes: int = 1
     ) -> (Dict[int, int], Dict[int, float]):
+        if n_changes == -1:
+            n_changes = len(self.curr_params)
+
         for param in self.curr_params[:n_changes]:
             choices = self.param_choices[param]
             if type(choices) is list:
@@ -196,33 +207,6 @@ class PatchGenerator:
         yield from self._set_patch_rec(self.curr_params, default_diff, patch)
 
 
-def parse_save_name(save_name: str,
-                    is_dir: bool = False) -> Dict[str, Union[int, float, bool]]:
-    if not is_dir:
-        save_name = os.path.splitext(save_name.strip())[0]  # Delete file ext.
-    tokens = save_name.split('__')
-    name = tokens[0]
-    result = {'name': name}
-
-    for token in tokens[1:]:
-        sub_tokens = token.split('_')
-        if len(sub_tokens) > 1:
-            key = '_'.join(sub_tokens[:-1])
-            value = sub_tokens[-1]
-            if '.' in value:
-                result[key] = float(value)
-            elif value == 'T':
-                result[key] = True
-            elif value == 'F':
-                result[key] = False
-            else:
-                result[key] = int(value)
-        else:
-            result[token] = True
-
-    return result
-
-
 def generate_render_hash(effect_names: List[str],
                          default_diff: Dict[int, int],
                          param_n_digits: Dict[int, int]) -> str:
@@ -259,9 +243,20 @@ def render_patch(engine: rm.RenderEngine,
                         False)
     audio = np.array(engine.get_audio_frames(), dtype=np.float64)
 
-    if save_dir and render_name:
-        save_path = os.path.join(save_dir, render_name)
-        sf.write(save_path, audio, rc.sr)
+    save_name = render_name
+    if rc.use_hashes:
+        render_hash = hashlib.sha1(render_name.encode('utf-8')).hexdigest()
+        render_hash = f'{render_hash}.wav'
+        save_name = render_hash
+
+    if save_dir and save_name:
+        save_path = os.path.join(save_dir, save_name)
+        if rc.use_hashes:
+            with open(os.path.join(save_dir, 'mapping.txt'), 'a') as mapping_f:
+                sf.write(save_path, audio, rc.sr)
+                mapping_f.write(f'{save_name}\t{render_name}\n')
+        else:
+            sf.write(save_path, audio, rc.sr)
 
     return audio
 
@@ -318,16 +313,6 @@ def _create_save_dir(rc: RenderConfig,
     return save_dir
 
 
-def _get_render_names(renders_dir: str, assert_unique: bool = True) -> Set[str]:
-    render_names = set()
-    for render_name in os.listdir(renders_dir):
-        if render_name.endswith('.wav'):
-            if assert_unique:
-                assert render_name not in render_names
-            render_names.add(render_name)
-    return render_names
-
-
 def render_audio(render_config_path: str,
                  max_duplicates_in_a_row: int = MAX_DUPLICATES) -> None:
     with open(render_config_path, 'r') as config_f:
@@ -338,7 +323,9 @@ def render_audio(render_config_path: str,
     assert rc.effect_names() == pg.effect_names
     save_dir = _create_save_dir(rc, create_dirs=True)
 
-    render_names = _get_render_names(save_dir, assert_unique=True)
+    render_names = get_render_names(save_dir,
+                                    assert_unique=True,
+                                    use_hashes=rc.use_hashes)
     n_existing_renders = len(render_names)
     log.info(f'{n_existing_renders} existing renders found.')
 
@@ -362,6 +349,7 @@ def render_audio(render_config_path: str,
         n_to_render = max(0, rc.max_n - n_existing_renders)
         log.info(f'n reduced to {n_to_render} due to max n of {rc.max_n}')
 
+    # TODO
     for exclude_dir in rc.exclude_dirs:
         log.info(f'Excluding renders in {exclude_dir}')
         n_existing_renders = len(render_names)
@@ -424,27 +412,15 @@ def render_audio(render_config_path: str,
                 pbar.update(1)
 
 
-def _generate_exclude_descs(exclude_effects: Set[str],
-                            exclude_params: Set[int]) -> Set[str]:
-    exclude_descs = set()
-    for effect_name in exclude_effects:
-        effect = get_effect(effect_name)
-        for param in effect.order:
-            exclude_params.add(param)
-            desc = PARAM_TO_DESC[param]
-            exclude_descs.add(desc)
-
-    for param in exclude_params:
-        desc = PARAM_TO_DESC[param]
-        exclude_descs.add(desc)
-
-    return exclude_descs
-
-
 def render_base_audio(orig_rc_path: str,
-                      exclude_effects: Set[str] = set(),
-                      exclude_params: Set[int] = set()) -> None:
-    exclude_descs = _generate_exclude_descs(exclude_effects, exclude_params)
+                      exclude_effects: Set[str] = None,
+                      exclude_params: Set[str] = None,
+                      use_hashes: bool = False) -> None:
+    if exclude_effects is None:
+        exclude_effects = set()
+    if exclude_params is None:
+        exclude_params = set()
+    exclude_descs = generate_exclude_descs(exclude_effects, exclude_params)
     log.info(f'Exclude effects = {exclude_effects}')
     log.info(f'Exclude params = {exclude_params}')
     log.info(f'Exclude descs = {exclude_descs}')
@@ -456,13 +432,16 @@ def render_base_audio(orig_rc_path: str,
     orig_save_dir = _create_save_dir(orig_rc, create_dirs=False)
     log.info(f'Original save dir = {orig_save_dir}')
 
-    orig_render_names = _get_render_names(orig_save_dir, assert_unique=True)
+    orig_render_names = get_render_names(orig_save_dir,
+                                         assert_unique=True,
+                                         use_hashes=orig_rc.use_hashes)
     log.info(f'{len(orig_render_names)} existing original renders found.')
 
     with open(orig_rc_path, 'r') as config_f:
         render_config = yaml.full_load(config_f)
 
     rc = RenderConfig(**render_config)
+    rc.use_hashes = use_hashes
     for desc in exclude_descs:
         for effect in rc.effects:
             if desc in effect:
@@ -476,7 +455,9 @@ def render_base_audio(orig_rc_path: str,
     save_dir = _create_save_dir(rc, create_dirs=True)
     log.info(f'Base save dir = {save_dir}')
 
-    base_render_names = _get_render_names(save_dir, assert_unique=True)
+    base_render_names = get_render_names(save_dir,
+                                         assert_unique=True,
+                                         use_hashes=rc.use_hashes)
     n_existing_renders = len(base_render_names)
     log.info(f'{n_existing_renders} existing base renders found.')
 
@@ -530,16 +511,25 @@ def render_base_audio(orig_rc_path: str,
 
 
 if __name__ == '__main__':
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/chorus_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/distortion_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/eq_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/filter_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/flanger_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/phaser_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/reverb-hall_test.yaml'))
-    # render_audio(os.path.join(CONFIGS_DIR, 'rendering/distortion_phaser_train.yaml'))
-    render_base_audio(os.path.join(CONFIGS_DIR,
-                                   'rendering/distortion_phaser_train.yaml'),
-                      # exclude_params={111, 112, 113, 114, 115})
-                      exclude_effects={'distortion'})
-                      # exclude_effects=set())
+    render_audio(os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml'))
+
+    # all_effects = ['flanger', 'phaser', 'compressor', 'eq', 'distortion']
+    # all_combos = []
+    # for n_effects in range(len(all_effects) + 1):
+    #     for combo in combinations(all_effects, n_effects):
+    #         all_combos.append(set(list(combo)))
+    #
+    # log.info(f'All exclude combos = {all_combos}')
+    # log.info(f'Len of exclude combos = {len(all_combos)}')
+    #
+    # for combo in all_combos:
+    #     if len(combo) > 2:  # TODO
+    #         use_hashes = False
+    #     else:
+    #         use_hashes = True
+    #     exclude_effects = set(combo)
+    #     render_base_audio(os.path.join(CONFIGS_DIR,
+    #                                    'rendering/seq_5_train.yaml'),
+    #                       exclude_effects=exclude_effects,
+    #                       use_hashes=use_hashes)
+    # exit()

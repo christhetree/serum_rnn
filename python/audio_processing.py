@@ -11,10 +11,11 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from audio_rendering import _generate_exclude_descs, parse_save_name
 from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, DATA_DIR, CONFIGS_DIR
 from effects import get_effect, param_to_type, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
+from util import get_render_names, get_mapping, generate_exclude_descs, \
+    parse_save_name
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 ProcessConfig = namedtuple(
     'ProcessConfig',
     'hop_length max_n_of_frames n_fft n_mels normalize_audio normalize_mel sr '
-    'root_dir'
+    'use_hashes root_dir'
 )
 
 
@@ -135,7 +136,8 @@ def process_audio(process_config_path: str) -> None:
 
     npz_names = []
     for npz_name in os.listdir(save_dir):
-        if npz_name.startswith(save_name) and '__y_' not in npz_name:  # TODO
+        # TODO
+        if npz_name.startswith(save_name) and '__y_' not in npz_name and '__base_' not in npz_name:
             npz_names.append(npz_name)
 
     assert len(npz_names) < 2
@@ -157,14 +159,19 @@ def process_audio(process_config_path: str) -> None:
     assert len(proc_hashes) == len(proc_render_names)
 
     renders_dir = os.path.join(pc.root_dir, 'renders')
-    render_names = []
-    for render_name in os.listdir(renders_dir):
-        if render_name.endswith('.wav'):
-            render_names.append(render_name)
+    render_names = get_render_names(renders_dir,
+                                    assert_unique=True,
+                                    use_hashes=pc.use_hashes)
     log.info(f'{len(render_names)} renders found in {renders_dir}')
 
     log.info('Shuffling render names.')
+    render_names = list(render_names)
     np.random.shuffle(render_names)
+
+    mapping = {}
+    if pc.use_hashes:
+        mapping_path = os.path.join(renders_dir, 'mapping.txt')
+        mapping = get_mapping(mapping_path)
 
     new_proc_render_names = []
     new_mels = []
@@ -173,7 +180,10 @@ def process_audio(process_config_path: str) -> None:
             log.debug(f'{render_name} has already been processed.')
             continue
 
-        audio_path = os.path.join(renders_dir, render_name)
+        if pc.use_hashes:
+            audio_path = os.path.join(renders_dir, mapping[render_name])
+        else:
+            audio_path = os.path.join(renders_dir, render_name)
         audio, sr = sf.read(audio_path)
 
         assert sr == pc.sr
@@ -249,13 +259,14 @@ def generate_base_render_hash(orig_render_name: str,
     return render_hash
 
 
-def process_base_audio(process_config_path: str,
-                       exclude_effects: Set[str] = set(),
-                       exclude_params: Set[int] = set()) -> None:
-    with open(process_config_path, 'r') as config_f:
-        process_config = yaml.full_load(config_f)
+def process_base_audio(orig_pc: ProcessConfig,
+                       exclude_effects: Set[str] = None,
+                       exclude_params: Set[int] = None) -> np.ndarray:
+    if exclude_params is None:
+        exclude_params = set()
+    if exclude_effects is None:
+        exclude_effects = set()
 
-    orig_pc = ProcessConfig(**process_config)
     log.info(f'Original root dir = {orig_pc.root_dir}')
     orig_save_dir = _create_save_dir(orig_pc, create_dirs=False)
     orig_save_name = _create_save_name(orig_pc)
@@ -263,7 +274,7 @@ def process_base_audio(process_config_path: str,
     npz_names = []
     for npz_name in os.listdir(orig_save_dir):
         # TODO
-        if npz_name.startswith(orig_save_name) and '__y_' not in npz_name:
+        if npz_name.startswith(orig_save_name) and '__y_' not in npz_name and '__base_' not in npz_name:
             npz_names.append(npz_name)
 
     assert len(npz_names) == 1
@@ -272,7 +283,7 @@ def process_base_audio(process_config_path: str,
     log.info(f'Found {len(orig_proc_render_names)} original processed renders '
              f'in {npz_names[0]}')
 
-    exclude_descs = _generate_exclude_descs(exclude_effects, exclude_params)
+    exclude_descs = generate_exclude_descs(exclude_effects, exclude_params)
     log.info(f'Exclude effects = {exclude_effects}')
     log.info(f'Exclude params = {exclude_params}')
     log.info(f'Exclude descs = {exclude_descs}')
@@ -298,6 +309,12 @@ def process_base_audio(process_config_path: str,
     base_effect_names = sorted(list(set(base_effect_names)))
     log.info(f'{base_effect_names} base effects found.')
 
+    # TODO
+    if len(base_effect_names) > 2:
+        base_use_hashes = True
+    else:
+        base_use_hashes = False
+
     base_effect_dir_name = f'{"_".join(base_effect_names)}__gran_{gran}'
     log.info(f'Base effect dir name: {base_effect_dir_name}')
 
@@ -310,14 +327,15 @@ def process_base_audio(process_config_path: str,
                             normalize_audio=orig_pc.normalize_audio,
                             normalize_mel=orig_pc.normalize_mel,
                             sr=orig_pc.sr,
-                            root_dir=base_root_dir)
+                            root_dir=base_root_dir,
+                            use_hashes=base_use_hashes)
     base_save_dir = _create_save_dir(base_pc, create_dirs=False)
     base_save_name = _create_save_name(base_pc)
 
     npz_names = []
     for npz_name in os.listdir(base_save_dir):
         # TODO
-        if npz_name.startswith(base_save_name) and '__y_' not in npz_name:
+        if npz_name.startswith(base_save_name) and '__y_' not in npz_name and '__base_' not in npz_name:
             npz_names.append(npz_name)
 
     assert len(npz_names) == 1
@@ -343,32 +361,111 @@ def process_base_audio(process_config_path: str,
         output_render_names.append(base_render_name)
         output_mels.append(render_name_to_mel[base_render_name])
 
+    log.info('Converting mels to ndarray.')
     output_mels = np.array(output_mels, dtype=np.float32)
     assert output_mels.shape == orig_proc_data['mels'].shape
+    log.info(f'Output mels shape = {output_mels.shape}')
+
+    # TODO
+    # output_npz_name = f'{orig_save_name}__n_{len(output_render_names)}' \
+    #                   f'___base__{"_".join(base_effect_names)}.npz'
+    # log.info(f'Saving new npz file: {output_npz_name}')
+    # np.savez(os.path.join(orig_save_dir, output_npz_name),
+    #          render_names=output_render_names,
+    #          mels=output_mels)
+    return output_mels
+
+
+def combine_mels(mels_paths: List[str],
+                 save_path: str,
+                 exclude_effects: Set[str] = None,
+                 exclude_params: Set[int] = None) -> None:
+    all_render_names = []
+    all_mels = []
+    all_base_mels = []
+    for mels_path in mels_paths:
+        data_npz_name = ntpath.basename(mels_path)
+        data = np.load(mels_path, allow_pickle=True)
+        render_names = data['render_names'].tolist()
+        log.info(f'{len(render_names)} renders found in {data_npz_name}')
+
+        mels = data['mels']
+        log.info(f'mels shape = {mels.shape}')
+        all_mels.append(mels)
+
+        root_dir = os.path.normpath(os.path.join(os.path.split(mels_path)[0],
+                                                 '../'))
+        log.info(f'Extracted root_dir = {root_dir}')
+        pc = data['process_config'].item()
+        pc['root_dir'] = root_dir
+        pc = ProcessConfig(**pc)
+        base_mels = process_base_audio(pc,
+                                       exclude_effects=exclude_effects,
+                                       exclude_params=exclude_params)
+        log.info(f'base_mels shape = {base_mels.shape}')
+        all_base_mels.append(base_mels)
+
+        all_render_names.extend(list(render_names))
+        log.info(f'all_render_names length = {len(all_render_names)}')
+
+    log.info(f'Concatenating mels.')
+    all_mels = np.concatenate(all_mels, axis=0)
+    log.info(f'Concatenating base mels.')
+    all_base_mels = np.concatenate(all_base_mels, axis=0)
+    log.info(f'all_mels shape = {all_mels.shape}')
+    log.info(f'all_base_mels shape = {all_base_mels.shape}')
+    log.info(f'Converting all_render_names to ndarray.')
+    all_render_names = np.array(all_render_names)
+    log.info(f'all_render_names shape = {all_render_names.shape}')
+
+    assert len(all_mels) == len(all_base_mels) == len(all_render_names)
+
+    rand_state = np.random.get_state()
+    log.info('Shuffling all_mels.')
+    np.random.shuffle(all_mels)
+
+    np.random.set_state(rand_state)
+    log.info('Shuffling all_base_mels.')
+    np.random.shuffle(all_base_mels)
+
+    np.random.set_state(rand_state)
+    log.info('Shuffling all_render_names.')
+    np.random.shuffle(all_render_names)
+
+    log.info(f'all_mels shape = {all_mels.shape}')
+    log.info(f'all_base_mels shape = {all_base_mels.shape}')
+    log.info(f'all_render_names length = {len(all_render_names)}')
+
+    log.info(f'Saving to {save_path}')
+    np.savez(save_path,
+             render_names=all_render_names,
+             mels=all_mels,
+             base_mels=all_base_mels)
 
 
 def generate_y(path: str,
-               params: Optional[Set[int]] = None) -> None:
+               gran: int,
+               params: Set[int]) -> None:
     assert os.path.isfile(path)
 
     data_npz_name = os.path.splitext(ntpath.basename(path))[0]
-    effect_dir_name = os.path.normpath(path).split(os.path.sep)[-3]
-    log.info(f'.npz file name: {data_npz_name}')
-    log.info(f'Effect dir name: {effect_dir_name}')
-
-    effect_dir_info = parse_save_name(effect_dir_name, is_dir=True)
-    gran = effect_dir_info['gran']
-    effect_names = effect_dir_info['name'].split('_')  # TODO
-    log.info(f'Using granularity of {gran}')
-    log.info(f'{effect_names} effects found.')
-
-    if params is None:
-        log.info('No params provided. Calculating y for all params.')
-        params = set()
-        for effect_name in effect_names:
-            effect = get_effect(effect_name)
-            for param in effect.order:
-                params.add(param)
+    # effect_dir_name = os.path.normpath(path).split(os.path.sep)[-3]
+    # log.info(f'.npz file name: {data_npz_name}')
+    # log.info(f'Effect dir name: {effect_dir_name}')
+    #
+    # effect_dir_info = parse_save_name(effect_dir_name, is_dir=True)
+    # gran = effect_dir_info['gran']
+    # effect_names = effect_dir_info['name'].split('_')  # TODO
+    # log.info(f'Using granularity of {gran}')
+    # log.info(f'{effect_names} effects found.')
+    #
+    # if params is None:
+    #     log.info('No params provided. Calculating y for all params.')
+    #     params = set()
+    #     for effect_name in effect_names:
+    #         effect = get_effect(effect_name)
+    #         for param in effect.order:
+    #             params.add(param)
 
     params = sorted(list(params))
     log.info(f'Calculating y for the following params: {params}')
@@ -470,25 +567,53 @@ def generate_y(path: str,
 
 
 if __name__ == '__main__':
-    # process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
-    process_base_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'),
+    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
+    # process_base_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'),
                        # exclude_effects={'distortion'})
                        # exclude_effects={'phaser'})
                        # exclude_effects={'flanger'})
                        # exclude_effects=set())
                        # exclude_effects={'distortion', 'phaser'})
-                       exclude_params={123})
+                       # exclude_params={123})
     exit()
+
+    # base_mels_path = '/Volumes/samsung_t5/reverse_synthesis'
+    # base_mels_path = DATA_DIR
+    # base_mels_path = os.path.join(base_mels_path, 'training/saw__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048')
+    # mels_paths = [
+    #     os.path.join(base_mels_path, 'compressor_distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'compressor_distortion_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'compressor_eq_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'compressor_distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_49999.npz'),
+    # ]
+    # mels_paths = [
+    #     os.path.join(base_mels_path, 'compressor_distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'compressor_eq_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'eq_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    # ]
+    # mels_paths = [
+    #     os.path.join(base_mels_path, 'compressor_distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'distortion_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
+    #     os.path.join(base_mels_path, 'compressor_distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_49999.npz'),
+    # ]
+    # combine_mels(mels_paths,
+    #              os.path.join(DATA_DIR, 'combined_distortion_200k.npz'),
+    #              exclude_effects={'distortion'})
+    # exit()
 
     # n = 56
     # n = 1000
-    n = 25000
+    # n = 25000
     # gran = 1000
     gran = 100
     # effect = 'chorus'
     # params = {118, 119, 120, 121, 122, 123}
+    # effect = 'compressor'
+    # params = {270, 271, 272}
     # effect = 'distortion'
-    # params = {97, 99}
+    params = {97, 99}
     # effect = 'eq'
     # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
@@ -499,9 +624,14 @@ if __name__ == '__main__':
     # params = {111, 112, 113, 114, 115}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
-    effect = 'distortion_phaser'
-    params = {111, 112, 113, 114, 115}
+    # effect = 'distortion_phaser'
 
-    generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
+    # params = {88, 89, 90, 91}
+
+    # generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
     # generate_y(os.path.join(DATA_DIR, f'audio_test_data/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
-               params=params)
+    # generate_y(os.path.join(DATA_DIR, 'combined_compressor_200k.npz'),
+    # generate_y(os.path.join(DATA_DIR, 'combined_eq_200k.npz'),
+    # generate_y(os.path.join(DATA_DIR, 'combined_distortion_200k.npz'),
+    #            gran,
+    #            params)

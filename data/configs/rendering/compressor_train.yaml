@@ -1,14 +1,14 @@
-# TODO
 effects:
-- Phs_Rate: []
-  Phs_Dpth: []
-  Phs_Frq: []
-  Phs_Feed: []
-  Phs_Stereo: []
-  name: phaser
-granularity: 100
+  - name: compressor
+    Cmp_Att: [0]
+    CmpMBnd: [1]
+    CompMB L: []
+    CompMB M: []
+    CompMB H: []
+gran: 100
 midi: 40
-n: 12500
+n: 25000
+max_n: 25000
 note_length: 1.0
 preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/default.fxp
 render_length: 1.0
