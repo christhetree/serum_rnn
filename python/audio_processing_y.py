@@ -17,8 +17,8 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 
 def generate_y(path: str,
-               gran: int,
-               params: Set[int]) -> None:
+               params: Set[int],
+               gran: int = 100) -> None:
     assert os.path.isfile(path)
 
     data_npz_name = os.path.splitext(ntpath.basename(path))[0]

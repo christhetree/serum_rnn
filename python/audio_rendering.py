@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import logging
 import ntpath
@@ -146,7 +147,7 @@ class PatchGenerator:
 
     def generate_random_patch(
             self,
-            n_changes: int = 1
+            n_changes: int = -1
     ) -> (Dict[int, int], Dict[int, float]):
         if n_changes == -1:
             n_changes = len(self.curr_params)
@@ -313,12 +314,8 @@ def _create_save_dir(rc: RenderConfig,
     return save_dir
 
 
-def render_audio(render_config_path: str,
+def render_audio(rc: RenderConfig,
                  max_duplicates_in_a_row: int = MAX_DUPLICATES) -> None:
-    with open(render_config_path, 'r') as config_f:
-        render_config = yaml.full_load(config_f)
-
-    rc = RenderConfig(**render_config)
     pg = PatchGenerator(rc)
     assert rc.effect_names() == pg.effect_names
     save_dir = _create_save_dir(rc, create_dirs=True)
@@ -412,7 +409,7 @@ def render_audio(render_config_path: str,
                 pbar.update(1)
 
 
-def render_base_audio(orig_rc_path: str,
+def render_base_audio(orig_rc: RenderConfig,
                       exclude_effects: Set[str] = None,
                       exclude_params: Set[str] = None,
                       use_hashes: bool = False) -> None:
@@ -425,10 +422,6 @@ def render_base_audio(orig_rc_path: str,
     log.info(f'Exclude params = {exclude_params}')
     log.info(f'Exclude descs = {exclude_descs}')
 
-    with open(orig_rc_path, 'r') as config_f:
-        render_config = yaml.full_load(config_f)
-
-    orig_rc = RenderConfig(**render_config)
     orig_save_dir = _create_save_dir(orig_rc, create_dirs=False)
     log.info(f'Original save dir = {orig_save_dir}')
 
@@ -437,11 +430,19 @@ def render_base_audio(orig_rc_path: str,
                                          use_hashes=orig_rc.use_hashes)
     log.info(f'{len(orig_render_names)} existing original renders found.')
 
-    with open(orig_rc_path, 'r') as config_f:
-        render_config = yaml.full_load(config_f)
+    rc = RenderConfig(preset=orig_rc.preset,
+                      sr=orig_rc.sr,
+                      note_length=orig_rc.note_length,
+                      render_length=orig_rc.render_length,
+                      midi=orig_rc.midi,
+                      vel=orig_rc.vel,
+                      gran=orig_rc.gran,
+                      n=orig_rc.n,
+                      max_n=orig_rc.max_n,
+                      root_dir=orig_rc.root_dir,
+                      effects=copy.deepcopy(orig_rc.effects),
+                      use_hashes=use_hashes)
 
-    rc = RenderConfig(**render_config)
-    rc.use_hashes = use_hashes
     for desc in exclude_descs:
         for effect in rc.effects:
             if desc in effect:
@@ -511,25 +512,38 @@ def render_base_audio(orig_rc_path: str,
 
 
 if __name__ == '__main__':
-    render_audio(os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml'))
-
-    # all_effects = ['flanger', 'phaser', 'compressor', 'eq', 'distortion']
-    # all_combos = []
-    # for n_effects in range(len(all_effects) + 1):
-    #     for combo in combinations(all_effects, n_effects):
-    #         all_combos.append(set(list(combo)))
+    # render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml')
+    # with open(render_config_path, 'r') as config_f:
+    #     render_config = yaml.full_load(config_f)
     #
-    # log.info(f'All exclude combos = {all_combos}')
-    # log.info(f'Len of exclude combos = {len(all_combos)}')
-    #
-    # for combo in all_combos:
-    #     if len(combo) > 2:  # TODO
-    #         use_hashes = False
-    #     else:
-    #         use_hashes = True
-    #     exclude_effects = set(combo)
-    #     render_base_audio(os.path.join(CONFIGS_DIR,
-    #                                    'rendering/seq_5_train.yaml'),
-    #                       exclude_effects=exclude_effects,
-    #                       use_hashes=use_hashes)
+    # rc = RenderConfig(**render_config)
+    # render_audio(rc)
     # exit()
+
+    all_effects = ['flanger', 'phaser', 'compressor', 'eq', 'distortion']
+    all_combos = []
+    for n_effects in range(len(all_effects) + 1):
+        for combo in combinations(all_effects, n_effects):
+            all_combos.append(set(list(combo)))
+
+    all_combos.reverse()
+
+    log.info(f'All exclude combos = {all_combos}')
+    log.info(f'Len of exclude combos = {len(all_combos)}')
+
+    render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml')
+    with open(render_config_path, 'r') as config_f:
+        render_config = yaml.full_load(config_f)
+
+    orig_rc = RenderConfig(**render_config)
+
+    for combo in all_combos:
+        if len(combo) > 2:  # TODO
+            use_hashes = False
+        else:
+            use_hashes = True
+        exclude_effects = set(combo)
+        render_base_audio(orig_rc,
+                          exclude_effects=exclude_effects,
+                          use_hashes=use_hashes)
+    exit()

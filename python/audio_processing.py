@@ -2,6 +2,7 @@ import logging
 import ntpath
 import os
 from collections import namedtuple
+from itertools import combinations
 from typing import Optional, Set, List
 
 import librosa as lr
@@ -11,11 +12,11 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR
+from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR, DATASETS_DIR
 from effects import get_effect, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 from util import get_render_names, get_mapping, generate_exclude_descs, \
-    parse_save_name
+    parse_save_name, get_mels_npz_path
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -35,7 +36,9 @@ def get_mel_spec(audio: np.ndarray,
                  n_fft: int = N_FFT,
                  max_n_of_frames: Optional[int] = None,
                  normalize_audio: bool = True,
-                 normalize_mel: bool = True) -> np.ndarray:
+                 normalize_mel: bool = True,
+                 db_ref: float = 1.0,
+                 top_db: float = 80.0) -> np.ndarray:
     if normalize_audio:
         audio = lr.util.normalize(audio)
 
@@ -54,11 +57,10 @@ def get_mel_spec(audio: np.ndarray,
         hop_length=hop_length,
         n_mels=n_mels
     )
-    mel_spec = lr.power_to_db(mel_spec, ref=1.0)
+    mel_spec = lr.power_to_db(mel_spec, ref=db_ref, top_db=top_db)
 
     if normalize_mel:
-        # Axis must be None to normalize across both dimensions at once
-        mel_spec = lr.util.normalize(mel_spec, axis=None)
+        mel_spec = mel_spec / top_db
 
     return mel_spec
 
@@ -102,8 +104,8 @@ def add_noise(y: np.ndarray,
     return output
 
 
-def _create_save_dir(pc: ProcessConfig,
-                     create_dirs: bool = True) -> str:
+def create_save_dir(pc: ProcessConfig,
+                    create_dirs: bool = True) -> str:
     assert os.path.exists(pc.root_dir)
 
     save_dir = os.path.join(pc.root_dir, 'processing')
@@ -117,7 +119,7 @@ def _create_save_dir(pc: ProcessConfig,
     return save_dir
 
 
-def _create_save_name(pc: ProcessConfig) -> str:
+def create_save_name(pc: ProcessConfig) -> str:
     save_name = f'mel__sr_{pc.sr}__frames_{pc.max_n_of_frames}__' \
                 f'n_fft_{pc.n_fft}__n_mels_{pc.n_mels}__' \
                 f'hop_len_{pc.hop_length}__' \
@@ -126,13 +128,9 @@ def _create_save_name(pc: ProcessConfig) -> str:
     return save_name
 
 
-def process_audio(process_config_path: str) -> None:
-    with open(process_config_path, 'r') as config_f:
-        process_config = yaml.full_load(config_f)
-
-    pc = ProcessConfig(**process_config)
-    save_dir = _create_save_dir(pc, create_dirs=True)
-    save_name = _create_save_name(pc)
+def process_audio(pc: ProcessConfig) -> None:
+    save_dir = create_save_dir(pc, create_dirs=True)
+    save_name = create_save_name(pc)
 
     npz_names = []
     for npz_name in os.listdir(save_dir):
@@ -223,6 +221,11 @@ def process_audio(process_config_path: str) -> None:
     log.info(f'Total mels shape = {mels.shape}')
     new_npz_name = f'{save_name}__n_{len(proc_render_names)}.npz'
 
+    log.info(f'Mels mean = {np.mean(mels)}')
+    log.info(f'Mels std = {np.std(mels)}')
+    log.info(f'Mels max = {np.max(mels)}')
+    log.info(f'Mels min = {np.min(mels)}')
+
     log.info(f'Saving new npz file: {new_npz_name}')
     np.savez(os.path.join(save_dir, new_npz_name),
              render_names=proc_render_names,
@@ -268,8 +271,8 @@ def process_base_audio(orig_pc: ProcessConfig,
         exclude_effects = set()
 
     log.info(f'Original root dir = {orig_pc.root_dir}')
-    orig_save_dir = _create_save_dir(orig_pc, create_dirs=False)
-    orig_save_name = _create_save_name(orig_pc)
+    orig_save_dir = create_save_dir(orig_pc, create_dirs=False)
+    orig_save_name = create_save_name(orig_pc)
 
     npz_names = []
     for npz_name in os.listdir(orig_save_dir):
@@ -329,8 +332,8 @@ def process_base_audio(orig_pc: ProcessConfig,
                             sr=orig_pc.sr,
                             root_dir=base_root_dir,
                             use_hashes=base_use_hashes)
-    base_save_dir = _create_save_dir(base_pc, create_dirs=False)
-    base_save_name = _create_save_name(base_pc)
+    base_save_dir = create_save_dir(base_pc, create_dirs=False)
+    base_save_name = create_save_name(base_pc)
 
     npz_names = []
     for npz_name in os.listdir(base_save_dir):
@@ -395,7 +398,7 @@ def combine_mels(mels_paths: List[str],
 
         root_dir = os.path.normpath(os.path.join(os.path.split(mels_path)[0],
                                                  '../'))
-        log.info(f'Extracted root_dir = {root_dir}')
+        log.info(f'Extracted effect dir = {root_dir}')
         pc = data['process_config'].item()
         pc['root_dir'] = root_dir
         pc = ProcessConfig(**pc)
@@ -406,7 +409,7 @@ def combine_mels(mels_paths: List[str],
         all_base_mels.append(base_mels)
 
         all_render_names.extend(list(render_names))
-        log.info(f'all_render_names length = {len(all_render_names)}')
+        log.info(f'all_render_names length = {len(all_render_names)}\n')
 
     log.info(f'Concatenating mels.')
     all_mels = np.concatenate(all_mels, axis=0)
@@ -443,39 +446,83 @@ def combine_mels(mels_paths: List[str],
              base_mels=all_base_mels)
 
 
-if __name__ == '__main__':
-    process_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'))
-    # process_base_audio(os.path.join(CONFIGS_DIR, 'audio_process_test.yaml'),
-                       # exclude_effects={'distortion'})
-                       # exclude_effects={'phaser'})
-                       # exclude_effects={'flanger'})
-                       # exclude_effects=set())
-                       # exclude_effects={'distortion', 'phaser'})
-                       # exclude_params={123})
-    exit()
+def process_audio_all_combos(orig_pc: ProcessConfig,
+                             effects: Set[str],
+                             gran: int = 100) -> None:
+    all_combos = []
+    for n_effects in range(1, len(effects) + 1):
+        for combo in combinations(effects, n_effects):
+            all_combos.append(set(list(combo)))
+    all_combos.append({'dry'})
+    all_combos.reverse()
 
-    # base_mels_path = '/Volumes/samsung_t5/reverse_synthesis'
-    # base_mels_path = DATA_DIR
-    # base_mels_path = os.path.join(base_mels_path, 'training/saw__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048')
-    # mels_paths = [
-    #     os.path.join(base_mels_path, 'compressor_distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'compressor_distortion_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'compressor_eq_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'compressor_distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_49999.npz'),
-    # ]
-    # mels_paths = [
-    #     os.path.join(base_mels_path, 'compressor_distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'compressor_eq_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'eq_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    # ]
-    # mels_paths = [
-    #     os.path.join(base_mels_path, 'compressor_distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'distortion_eq_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'distortion_flanger_phaser__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_50000.npz'),
-    #     os.path.join(base_mels_path, 'compressor_distortion__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_49999.npz'),
-    # ]
-    # combine_mels(mels_paths,
-    #              os.path.join(DATA_DIR, 'combined_distortion_200k.npz'),
-    #              exclude_effects={'distortion'})
+    log.info(f'All effect combos = {all_combos}')
+    log.info(f'Len of effect combos = {len(all_combos)}')
+
+    preset_dir = os.path.split(orig_pc.root_dir)[0]
+
+    for combo in tqdm(all_combos):
+        if len(combo) > 2:  # TODO
+            use_hashes = True
+        else:
+            use_hashes = False
+        effects = sorted(list(combo))
+        root_dir = os.path.join(preset_dir, f'{"_".join(effects)}__gran_{gran}')
+        pc = orig_pc._replace(use_hashes=use_hashes, root_dir=root_dir)
+        process_audio(pc)
+
+
+def combine_mels_all_combos(pc: ProcessConfig,
+                            save_path: str,
+                            exclude_effects: Set[str],
+                            base_effects: Set[str] = None,
+                            gran: int = 100) -> None:
+    if base_effects is None:
+        base_effects = set()
+    assert exclude_effects
+    assert all(e not in base_effects for e in exclude_effects)
+
+    all_combos = []
+    for n_effects in range(len(base_effects) + 1):
+        for combo in combinations(base_effects, n_effects):
+            combo = set(list(combo))
+            combo.update(exclude_effects)
+            all_combos.append(combo)
+
+    log.info(f'All effect combos = {all_combos}')
+    log.info(f'Len of effect combos = {len(all_combos)}')
+
+    preset_dir = os.path.split(pc.root_dir)[0]
+    npz_prefix = create_save_name(pc)
+
+    mels_paths = []
+    for combo in tqdm(all_combos):
+        effects = sorted(list(combo))
+        effect_dir = os.path.join(preset_dir, f'{"_".join(effects)}__gran_{gran}')
+        mel_npz_path = get_mels_npz_path(npz_prefix, effect_dir)
+        mels_paths.append(mel_npz_path)
+
+    log.info('mels_paths:')
+    for mels_path in mels_paths:
+        log.info(f'-- {mels_path}')
+    log.info(f'Length of mels_paths = {len(mels_paths)}')
+    combine_mels(mels_paths,
+                 save_path,
+                 exclude_effects=exclude_effects)
+
+
+if __name__ == '__main__':
+    process_config_path = os.path.join(CONFIGS_DIR, 'audio_process_test.yaml')
+    with open(process_config_path, 'r') as config_f:
+        process_config = yaml.full_load(config_f)
+    pc = ProcessConfig(**process_config)
+    all_effects = {'flanger', 'phaser', 'compressor', 'eq', 'distortion'}
+
+    # process_audio_all_combos(pc, all_effects)
+    # exit()
+
+    # exclude_effects = {'eq'}
+    # base_effects = all_effects - exclude_effects
+    # save_path = os.path.join(DATASETS_DIR, 'training_eq_l__eq.npz')
+    # combine_mels_all_combos(pc, save_path, exclude_effects, base_effects)
     # exit()

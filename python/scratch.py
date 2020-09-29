@@ -275,16 +275,56 @@ sf.write(
 # sf.write('/Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/square__dist_inv_256.wav', audio, sr)
 
 
-i = 1000000
-results = []
-for _ in range(i):
-    goal = 0.0
-    # goal = np.random.uniform(0.0, 1.0)
-    guess = np.random.uniform(0.0, 1.0)
-    mae = abs(goal - guess)
-    results.append(mae)
+# i = 1000000
+# results = []
+# for _ in range(i):
+#     goal = 0.0
+#     # goal = np.random.uniform(0.0, 1.0)
+#     guess = np.random.uniform(0.0, 1.0)
+#     mae = abs(goal - guess)
+#     results.append(mae)
+#
+# print(len(results))
+# print(np.mean(results))
+# print(np.std(results))
+# exit()
 
-print(len(results))
-print(np.mean(results))
-print(np.std(results))
-exit()
+# Squre compression
+# -14.407989
+# 17.579754
+# -69.88389
+# 39.220177
+
+# Sine compression
+# -45.556614
+# 14.507765
+# -70.14759
+# 38.846474
+
+# Square EQ
+# -10.365809
+# 16.198515
+# -68.68618
+# 48.045612
+
+# Sine EQ
+# -40.396572
+# 15.43005
+# -68.73795
+# 48.020523
+
+# # data = np.load('/Volumes/samsung_t5/reverse_synthesis/training_eq_l/square__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_F__n_4986.npz',
+# # data = np.load('/Volumes/samsung_t5/reverse_synthesis/training_eq_l/sine__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_F__n_4981.npz',
+# # data = np.load('/Volumes/samsung_t5/reverse_synthesis/training_eq_l/square__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/eq__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_F__n_4994.npz',
+# # data = np.load('/Volumes/samsung_t5/reverse_synthesis/training_eq_l/sine__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/eq__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_F__n_4995.npz',
+# data = np.load(
+#     '/Volumes/samsung_t5/reverse_synthesis/training_eq_l/square__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/eq__gran_100/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_4994.npz',
+#     allow_pickle=True)
+# mels = data['mels']
+# print(np.mean(mels))
+# # print(np.mean(mels, axis=1))
+# # print(np.mean(mels, axis=2))
+# print(np.std(mels))
+# print(np.min(mels))
+# print(np.max(mels))
+# exit()
