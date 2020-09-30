@@ -328,3 +328,38 @@ sf.write(
 # print(np.min(mels))
 # print(np.max(mels))
 # exit()
+
+
+# # datasets_dir = DATASETS_DIR
+# datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+# x_data_path = os.path.join(datasets_dir, f'training_eq_l__{effect}.npz')
+# x_npz_data = np.load(x_data_path)
+#
+# # x_base_path = f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}___base__{"_".join(base_effects)}.npz'
+# # x_base_path = os.path.join(DATA_DIR, x_base_pathd)
+# # x_base_data = np.load(x_base_path)
+# # base_mels = x_base_data['mels']
+# # log.info(f'base_effects = {base_effects}')
+# # log.info(f'base_mels shape = {base_mels.shape}')
+#
+# x = x_npz_data['mels'][:N]
+# in_x = x.shape[1]
+# in_y = x.shape[2]
+# log.info(f'mels shape = {x.shape}')
+# log.info(f'in_x = {in_x}, in_y = {in_y}')
+#
+# base_mels = x_npz_data['base_mels'][:N]
+# log.info(f'base_mels shape = {base_mels.shape}')
+#
+# x = np.concatenate([x, base_mels], axis=-1)
+# # x = np.concatenate([base_mels, x], axis=-1)
+# # x = np.concatenate([x, x], axis=-1)
+# # log.info('Using same x, x')
+# # x = np.concatenate([base_mels, base_mels], axis=-1)
+# # log.info('Using same b, b')
+# # x = x - base_mels
+# log.info(f'x shape = {x.shape}')
+#
+# y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_{params}.npz'
+# y_data = prepare_y_model_data(y_data_path)
+# y = [out[:N] for out in y_data.y_s]

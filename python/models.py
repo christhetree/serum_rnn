@@ -123,10 +123,14 @@ def build_effect_model(in_x: int,
                        in_y: int,
                        architecture: Callable = baseline_cnn,
                        n_bin: int = 0,
-                       n_cate: List[int] = [],
-                       cate_names: List[str] = [],
+                       n_cate: List[int] = None,
+                       cate_names: List[str] = None,
                        n_cont: int = 0,
                        **kwargs: Any) -> Model:
+    if cate_names is None:
+        cate_names = []
+    if n_cate is None:
+        n_cate = []
     log.info(f'Using architecture: {architecture.__name__}')
     input_img, fc = architecture(in_x, in_y, **kwargs)
 

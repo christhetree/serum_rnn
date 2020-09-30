@@ -1,21 +1,23 @@
 import logging
 import os
 from collections import namedtuple
-from typing import List, Union
+from typing import List, Union, Set
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.python.keras.utils.data_utils import Sequence
 
-from config import DATA_DIR, OUT_DIR
+from config import OUT_DIR, DATASETS_DIR
+from effects import DESC_TO_PARAM, param_to_effect
 from models import build_effect_model, baseline_cnn_2x, baseline_cnn
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 0
+GPU = 1
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -26,6 +28,120 @@ YModelData = namedtuple(
     'YModelData',
     'n_bin n_cate cate_names n_cont y_s y_losses metrics'
 )
+
+XYMetaData = namedtuple(
+    'XYMetaData',
+    'data_dir x_dir in_x in_y y_dir y_params y_params_str n_bin n_cate n_cont '
+    'descs cate_names y_losses metrics'
+)
+
+
+class DataGenerator(Sequence):
+    def __init__(self,
+                 x_ids: List[str],
+                 x_y_metadata: XYMetaData,
+                 batch_size: int = 512,
+                 shuffle: bool = True,
+                 channel_mode: int = 1) -> None:
+        assert len(x_ids) >= batch_size
+
+        if shuffle:
+            np.random.shuffle(x_ids)
+
+        assert channel_mode == -1 or channel_mode == 0 or channel_mode == 1
+        if channel_mode == -1:
+            log.warning('Data generator is using (b, b) channel mode!')
+        elif channel_mode == 0:
+            log.info('Data generator is using (x, x) channel mode.')
+        else:
+            log.info('Data generator is using (x, b) channel mode.')
+
+        self.x_dir = x_y_metadata.x_dir
+        self.x_ids = x_ids
+        self.in_x = x_y_metadata.in_x
+        self.in_y = x_y_metadata.in_y
+        self.y_dir = x_y_metadata.y_dir
+        self.y_params_str = x_y_metadata.y_params_str
+        self.n_bin = x_y_metadata.n_bin
+        self.descs = x_y_metadata.descs
+        self.n_cont = x_y_metadata.n_cont
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.channel_mode = channel_mode
+
+    def __len__(self) -> int:
+        return int(np.floor(len(self.x_ids) / self.batch_size))
+
+    def __getitem__(self, idx: int) -> (np.ndarray, List[np.ndarray]):
+        start_idx = idx * self.batch_size
+        end_idx = (idx + 1) * self.batch_size
+        batch_x_ids = self.x_ids[start_idx:end_idx]
+        x = self._create_x_batch(batch_x_ids)
+        y = self._create_y_batch(batch_x_ids)
+        return x, y
+
+    def _create_x_batch(self,
+                        batch_x_ids: List[str]) -> np.ndarray:
+        x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
+                     dtype=np.float32)
+
+        for idx, x_id in enumerate(batch_x_ids):
+            x_data = np.load(os.path.join(self.x_dir, x_id))
+
+            if self.channel_mode == 1:
+                mel = x_data['mel']
+                base_mel = x_data['base_mel']
+                x[idx, :, :, 0] = mel
+                x[idx, :, :, 1] = base_mel
+            elif self.channel_mode == 0:
+                mel = x_data['mel']
+                x[idx, :, :, 0] = mel
+                x[idx, :, :, 1] = mel
+            else:
+                base_mel = x_data['base_mel']
+                x[idx, :, :, 0] = base_mel
+                x[idx, :, :, 1] = base_mel
+
+        return x
+
+    def _create_y_batch(self,
+                        batch_x_ids: List[str]) -> List[np.ndarray]:
+        y_bin = None
+        y_cates = []
+        y_cont = None
+        if self.n_bin:
+            y_bin = np.empty((self.batch_size, self.n_bin), dtype=np.float32)
+
+        for _ in self.descs:
+            y_cates.append(np.empty((self.batch_size,), dtype=np.int32))
+
+        if self.n_cont:
+            y_cont = np.empty((self.batch_size, self.n_cont), dtype=np.float32)
+
+        for idx, x_id in enumerate(batch_x_ids):
+            y_id = f'{x_id}__y_{self.y_params_str}.npz'
+            y_data = np.load(os.path.join(self.y_dir, y_id))
+            if self.n_bin:
+                y_bin[idx] = y_data['binary']
+
+            for desc, y_cate in zip(self.descs, y_cates):
+                y_cate[idx] = y_data[desc]
+
+            if self.n_cont:
+                y_cont[idx] = y_data['continuous']
+
+        y = []
+        if self.n_bin:
+            y.append(y_bin)
+        y.extend(y_cates)
+        if self.n_cont:
+            y.append(y_cont)
+
+        return y
+
+    def on_epoch_end(self) -> None:
+        if self.shuffle:
+            np.random.shuffle(self.x_ids)
 
 
 def train_model(
@@ -58,6 +174,36 @@ def train_model(
               epochs=epochs,
               validation_split=val_split,
               callbacks=[es, cp],
+              verbose=1)
+
+
+def train_model_gen(model: Model,
+                    train_gen: DataGenerator,
+                    val_gen: DataGenerator,
+                    model_name: str,
+                    epochs: int = 100,
+                    patience: int = 10,
+                    output_dir_path: str = OUT_DIR,
+                    workers: int = 4) -> None:
+    save_path = os.path.join(
+        output_dir_path,
+        # model_name + '_e{epoch:03d}_vl{val_loss:.4f}.h5'
+        f'{model_name}_best.h5'
+    )
+    es = EarlyStopping(monitor='val_loss',
+                       min_delta=0,
+                       patience=patience,
+                       verbose=1)
+    cp = ModelCheckpoint(save_path,
+                         monitor='val_loss',
+                         save_best_only=True,
+                         verbose=1)
+    model.fit(train_gen,
+              validation_data=val_gen,
+              epochs=epochs,
+              callbacks=[es, cp],
+              use_multiprocessing=True,
+              workers=workers,
               verbose=1)
 
 
@@ -123,6 +269,129 @@ def prepare_y_model_data(y_data_path: str) -> YModelData:
     return y_model_data
 
 
+def get_x_y_metadata(data_dir: str,
+                     y_params: Set[int]) -> XYMetaData:
+    assert os.path.exists(data_dir)
+    x_dir = os.path.join(data_dir, 'x')
+    assert os.path.exists(x_dir)
+
+    sample_x_name = None
+    sample_x_data = None
+    for npz_name in os.listdir(x_dir):
+        if npz_name.endswith('.npz'):
+            sample_x_name = npz_name
+            sample_x_data = np.load(os.path.join(x_dir, sample_x_name))
+            break
+    assert sample_x_name
+    assert sample_x_data is not None
+
+    sample_mel = sample_x_data['mel']
+    log.info(f'Input spectrogram shape = {sample_mel.shape}')
+    assert len(sample_mel.shape) == 2
+    in_x = sample_mel.shape[0]
+    in_y = sample_mel.shape[1]
+    sample_base_mel = sample_x_data['base_mel']
+    assert sample_mel.shape == sample_base_mel.shape
+
+    y_dir = os.path.join(data_dir, 'y')
+    assert os.path.exists(y_dir)
+
+    y_params = sorted(list(y_params))
+    y_params_str = '_'.join(str(p) for p in y_params)
+
+    sample_y_data = np.load(
+        os.path.join(y_dir, f'{sample_x_name}__y_{y_params_str}.npz'))
+    n_bin = 0
+    n_cont = 0
+    descs = []
+
+    for key, values in sample_y_data.items():
+        if key == 'binary':
+            n_bin = len(values)
+        elif key == 'continuous':
+            n_cont = len(values)
+        else:
+            descs.append(key)
+
+    descs = sorted(descs)
+    log.info(f'n_bin = {n_bin}')
+    log.info(f'descs = {descs}')
+    log.info(f'n_cont = {n_cont}')
+
+    n_cate = []
+    cate_names = []
+    y_losses = {}
+    metrics = {}
+
+    if n_bin:
+        y_losses['bin_output'] = 'bce'
+        metrics['bin_output'] = 'acc'
+
+    for desc in descs:
+        param = DESC_TO_PARAM[desc]
+        effect = param_to_effect[param]
+        n_cate.append(effect.categorical[param])
+
+        cate_name = desc.strip().lower().replace(' ', '_')
+        cate_names.append(cate_name)
+
+        y_losses[cate_name] = 'sparse_categorical_crossentropy'
+        metrics[cate_name] = 'acc'
+
+    if n_cont:
+        y_losses['cont_output'] = 'mse'
+        metrics['cont_output'] = 'mae'
+
+    log.info(f'n_cate = {n_cate}')
+    log.info(f'cate_names = {cate_names}')
+    log.info(f'y_losses = {y_losses}')
+    log.info(f'metrics = {metrics}')
+
+    x_y_metadata = XYMetaData(data_dir=data_dir,
+                              x_dir=x_dir,
+                              in_x=in_x,
+                              in_y=in_y,
+                              y_dir=y_dir,
+                              y_params=set(y_params),
+                              y_params_str=y_params_str,
+                              n_bin=n_bin,
+                              n_cate=n_cate,
+                              n_cont=n_cont,
+                              descs=descs,
+                              cate_names=cate_names,
+                              y_losses=y_losses,
+                              metrics=metrics)
+
+    return x_y_metadata
+
+
+def get_x_ids(data_dir: str,
+              val_split: float = 0.10,
+              test_split: float = 0.05,
+              max_n: int = -1) -> (List[str], List[str], List[str]):
+    assert val_split + test_split < 1.0
+
+    x_dir = os.path.join(data_dir, 'x')
+    x_ids = []
+    for npz_name in os.listdir(x_dir):
+        if not npz_name.endswith('.npz'):
+            continue
+        x_ids.append(npz_name)
+    log.info(f'Found {len(x_ids)} data points.')
+
+    np.random.shuffle(x_ids)
+    if max_n > 0:
+        x_ids = x_ids[:max_n]
+
+    val_idx = int(len(x_ids) * (1.0 - val_split - test_split))
+    test_idx = int(len(x_ids) * (1.0 - test_split))
+    train_x_ids = x_ids[:val_idx]
+    val_x_ids = x_ids[val_idx:test_idx]
+    test_x_ids = x_ids[test_idx:]
+
+    return train_x_ids, val_x_ids, test_x_ids
+
+
 if __name__ == '__main__':
     # n = 14014
     # n = 25000
@@ -130,11 +399,12 @@ if __name__ == '__main__':
     gran = 100
     # effect = 'chorus'
     # params = {118, 119, 120, 121, 122, 123}
-    # effect = 'compressor'
-    # params = {270, 271, 272}
-    effect = 'distortion'
-    params = {97, 99}
+    effect = 'compressor'
+    params = {270, 271, 272}
+    # effect = 'distortion'
+    # params = {97, 99}
     # effect = 'eq'
+    # params = {88, 90, 92, 94}
     # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
@@ -146,78 +416,62 @@ if __name__ == '__main__':
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
 
-    # params = {88, 89, 90, 91}
-
-    # base_effects = ['distortion']
-    # base_effects = ['phaser']
-
-    # architecture = baseline_cnn
-    architecture = baseline_cnn_2x
+    architecture = baseline_cnn
+    # architecture = baseline_cnn_2x
     # architecture = exposure_cnn
-    batch_size = 512
+    batch_size = 128
     epochs = 100
     val_split = 0.10
+    test_split = 0.05
     patience = 10
     model_name = f'{effect}_{architecture.__name__}'
-    N = 56000
+    max_n = 56000
+    # max_n = -1
+    channel_mode = 1
+    workers = 8
 
-    params = sorted([str(_) for _ in params])
-    params = '_'.join(params)
+    # datasets_dir = DATASETS_DIR
+    datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+    data_dir = os.path.join(datasets_dir, f'{effect}_testing')
 
-    # x_data_path = f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'
-    # x_data_path = 'combined_compressor_200k.npz'
-    # x_data_path = 'combined_eq_200k.npz'
-    x_data_path = 'combined_distortion_200k.npz'
-    x_data_path = os.path.join(DATA_DIR, x_data_path)
-    x_npz_data = np.load(x_data_path)
+    x_y_metadata = get_x_y_metadata(data_dir, params)
+    train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
+                                                   val_split=val_split,
+                                                   test_split=test_split,
+                                                   max_n=max_n)
+    log.info(f'train_x_ids length = {len(train_x_ids)}')
+    log.info(f'val_x_ids length = {len(val_x_ids)}')
+    log.info(f'test_x_ids length = {len(test_x_ids)}')
 
-    # x_base_path = f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}___base__{"_".join(base_effects)}.npz'
-    # x_base_path = os.path.join(DATA_DIR, x_base_path)
-    # x_base_data = np.load(x_base_path)
-    # base_mels = x_base_data['mels']
-    # log.info(f'base_effects = {base_effects}')
-    # log.info(f'base_mels shape = {base_mels.shape}')
+    test_x_ids_save_path = os.path.join(data_dir, 'test_x_ids.npz')
+    np.savez(test_x_ids_save_path, test_x_ids=test_x_ids)
 
-    x = x_npz_data['mels'][:N]
-    in_x = x.shape[1]
-    in_y = x.shape[2]
-    log.info(f'mels shape = {x.shape}')
-    log.info(f'in_x = {in_x}, in_y = {in_y}')
+    train_gen = DataGenerator(train_x_ids,
+                              x_y_metadata,
+                              batch_size=batch_size,
+                              channel_mode=channel_mode)
+    val_gen = DataGenerator(val_x_ids,
+                            x_y_metadata,
+                            batch_size=batch_size,
+                            channel_mode=channel_mode)
 
-    base_mels = x_npz_data['base_mels'][:N]
-    log.info(f'base_mels shape = {base_mels.shape}')
-
-    x = np.concatenate([x, base_mels], axis=-1)
-    # x = np.concatenate([base_mels, x], axis=-1)
-    # x = np.concatenate([x, x], axis=-1)
-    # log.info('Using same x, x')
-    # x = np.concatenate([base_mels, base_mels], axis=-1)
-    # log.info('Using same b, b')
-    # x = x - base_mels
-    log.info(f'x shape = {x.shape}')
-
-    y_data_path = f'{os.path.splitext(x_data_path)[0]}__y_{params}.npz'
-    y_data = prepare_y_model_data(y_data_path)
-    y = [out[:N] for out in y_data.y_s]
-
-    model = build_effect_model(in_x,
-                               in_y,
+    model = build_effect_model(x_y_metadata.in_x,
+                               x_y_metadata.in_y,
                                architecture=architecture,
-                               n_bin=y_data.n_bin,
-                               n_cate=y_data.n_cate,
-                               cate_names=y_data.cate_names,
-                               n_cont=y_data.n_cont)
+                               n_bin=x_y_metadata.n_bin,
+                               n_cate=x_y_metadata.n_cate,
+                               cate_names=x_y_metadata.cate_names,
+                               n_cont=x_y_metadata.n_cont)
 
     model.compile(optimizer='adam',
-                  loss=y_data.y_losses,
-                  metrics=y_data.metrics)
+                  loss=x_y_metadata.y_losses,
+                  metrics=x_y_metadata.metrics)
     model.summary()
 
-    train_model(model,
-                x,
-                y_data.y_s,
-                model_name,
-                batch_size=batch_size,
-                epochs=epochs,
-                val_split=val_split,
-                patience=patience)
+    train_model_gen(model,
+                    train_gen,
+                    val_gen,
+                    model_name,
+                    epochs=epochs,
+                    patience=patience,
+                    workers=workers)

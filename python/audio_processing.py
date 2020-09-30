@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import ntpath
 import os
@@ -446,6 +447,59 @@ def combine_mels(mels_paths: List[str],
              base_mels=all_base_mels)
 
 
+def combine_mels_individual(mels_path: str,
+                            save_dir: str,
+                            exclude_effects: Set[str] = None,
+                            exclude_params: Set[int] = None) -> None:
+    data = np.load(mels_path, allow_pickle=True)
+    render_names = data['render_names'].tolist()
+    log.info(f'{len(render_names)} renders found in {mels_path}')
+
+    if not os.path.exists(save_dir):
+        log.info(f'Making new save dir for {save_dir}')
+        os.makedirs(save_dir)
+    else:
+        log.info(f'Save dir {save_dir} already exists.')
+
+    save_dir = os.path.join(save_dir, 'x')
+    if not os.path.exists(save_dir):
+        log.info(f'Making new save dir for {save_dir}')
+        os.makedirs(save_dir)
+    else:
+        log.info(f'Save dir {save_dir} already exists.')
+
+    mels = data['mels'].squeeze(axis=-1)
+    log.info(f'mels shape = {mels.shape}')
+
+    effect_dir = os.path.normpath(
+        os.path.join(os.path.split(mels_path)[0], '../'))
+    log.info(f'Extracted effect dir = {effect_dir}')
+
+    preset_dir_name = os.path.split(os.path.split(effect_dir)[0])[1]
+    log.info(f'Extracted preset dir name = {preset_dir_name}')
+    preset_info = parse_save_name(preset_dir_name, is_dir=True)
+    preset = preset_info['name']
+    log.info(f'Extracted preset = {preset}')
+
+    pc = data['process_config'].item()
+    pc['root_dir'] = effect_dir
+    pc = ProcessConfig(**pc)
+    base_mels = process_base_audio(pc,
+                                   exclude_effects=exclude_effects,
+                                   exclude_params=exclude_params)
+    base_mels = base_mels.squeeze(axis=-1)
+    log.info(f'base_mels shape = {base_mels.shape}')
+
+    for render_name, mel, base_mel in tqdm(zip(render_names, mels, base_mels)):
+        render_hash = hashlib.sha1(render_name.encode('utf-8')).hexdigest()
+        save_name = f'{preset}__{render_hash}.npz'
+        save_path = os.path.join(save_dir, save_name)
+        np.savez(save_path,
+                 render_name=render_name,
+                 mel=mel,
+                 base_mel=base_mel)
+
+
 def process_audio_all_combos(orig_pc: ProcessConfig,
                              effects: Set[str],
                              gran: int = 100) -> None:
@@ -473,7 +527,7 @@ def process_audio_all_combos(orig_pc: ProcessConfig,
 
 
 def combine_mels_all_combos(pc: ProcessConfig,
-                            save_path: str,
+                            save_dir: str,
                             exclude_effects: Set[str],
                             base_effects: Set[str] = None,
                             gran: int = 100) -> None:
@@ -506,9 +560,15 @@ def combine_mels_all_combos(pc: ProcessConfig,
     for mels_path in mels_paths:
         log.info(f'-- {mels_path}')
     log.info(f'Length of mels_paths = {len(mels_paths)}')
-    combine_mels(mels_paths,
-                 save_path,
-                 exclude_effects=exclude_effects)
+
+    # combine_mels(mels_paths,
+    #              save_dir,
+    #              exclude_effects=exclude_effects)
+
+    for mels_path in tqdm(mels_paths):
+        combine_mels_individual(mels_path,
+                                save_dir,
+                                exclude_effects=exclude_effects)
 
 
 if __name__ == '__main__':
@@ -522,7 +582,15 @@ if __name__ == '__main__':
     # exit()
 
     # exclude_effects = {'eq'}
-    # base_effects = all_effects - exclude_effects
-    # save_path = os.path.join(DATASETS_DIR, 'training_eq_l__eq.npz')
-    # combine_mels_all_combos(pc, save_path, exclude_effects, base_effects)
-    # exit()
+    # exclude_effects = {'compressor'}
+    exclude_effects = {'distortion'}
+    base_effects = all_effects - exclude_effects
+    # datasets_dir = DATASETS_DIR
+    datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+    # save_path = os.path.join(datasets_dir, 'training_eq_l__eq.npz')
+    # save_path = os.path.join(datasets_dir, 'training_eq_l__compressor.npz')
+    # save_path = os.path.join(datasets_dir, 'eq_testing')
+    # save_path = os.path.join(datasets_dir, 'compressor_testing')
+    save_path = os.path.join(datasets_dir, 'distortion_testing')
+    combine_mels_all_combos(pc, save_path, exclude_effects, base_effects)
+    exit()
