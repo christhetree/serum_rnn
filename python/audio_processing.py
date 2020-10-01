@@ -371,13 +371,6 @@ def process_base_audio(orig_pc: ProcessConfig,
     assert output_mels.shape == orig_proc_data['mels'].shape
     log.info(f'Output mels shape = {output_mels.shape}')
 
-    # TODO
-    # output_npz_name = f'{orig_save_name}__n_{len(output_render_names)}' \
-    #                   f'___base__{"_".join(base_effect_names)}.npz'
-    # log.info(f'Saving new npz file: {output_npz_name}')
-    # np.savez(os.path.join(orig_save_dir, output_npz_name),
-    #          render_names=output_render_names,
-    #          mels=output_mels)
     return output_mels
 
 
@@ -579,8 +572,8 @@ if __name__ == '__main__':
     pc = ProcessConfig(**process_config)
     all_effects = {'flanger', 'phaser', 'compressor', 'eq', 'distortion'}
 
-    # process_audio_all_combos(pc, all_effects)
-    # exit()
+    process_audio_all_combos(pc, all_effects)
+    exit()
 
     effect = 'compressor'
     # effect = 'distortion'
@@ -589,10 +582,10 @@ if __name__ == '__main__':
     exclude_effects = {effect}
     presets = ['sine', 'triangle', 'saw', 'square']
 
-    # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
-    renders_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data'
-    # datasets_dir = DATASETS_DIR
-    datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+    renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
+    # renders_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data'
+    datasets_dir = DATASETS_DIR
+    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
     renders_dir = os.path.join(renders_dir, 'training_eq_l')
 
     save_name = f'basic_shapes__{effect}'

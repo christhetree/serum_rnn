@@ -230,7 +230,8 @@ if __name__ == '__main__':
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
 
-    # datasets_dir = DATASETS_DIR
-    datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    generate_y_individual(os.path.join(datasets_dir, f'basic_shapes__{effect}'),
+    datasets_dir = DATASETS_DIR
+    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+    # generate_y_individual(os.path.join(datasets_dir, f'basic_shapes__{effect}'),
+    generate_y_individual(os.path.join(datasets_dir, f'testing__{effect}'),
                           params)

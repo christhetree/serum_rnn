@@ -72,8 +72,13 @@ def get_mapping(mapping_path: str) -> Dict[str, str]:
     return mapping
 
 
-def generate_exclude_descs(exclude_effects: Set[str],
-                           exclude_params: Set[int]) -> Set[str]:
+def generate_exclude_descs(exclude_effects: Set[str] = None,
+                           exclude_params: Set[int] = None) -> Set[str]:
+    if exclude_effects is None:
+        exclude_effects = set()
+    if exclude_params is None:
+        exclude_params = set()
+
     exclude_descs = set()
     all_exclude_params = set(exclude_params)
     for effect_name in exclude_effects:

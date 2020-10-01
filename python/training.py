@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import namedtuple
-from typing import List, Union, Set
+from typing import List, Union, Set, Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -39,9 +39,9 @@ XYMetaData = namedtuple(
 
 class DataGenerator(Sequence):
     def __init__(self,
-                 x_ids: List[str],
+                 x_ids: List[Tuple[str, str, str]],
                  x_y_metadata: XYMetaData,
-                 batch_size: int = 512,
+                 batch_size: int = 128,
                  shuffle: bool = True,
                  channel_mode: int = 1) -> None:
         assert len(x_ids) >= batch_size
@@ -57,8 +57,8 @@ class DataGenerator(Sequence):
         else:
             log.info('Data generator is using (x, b) channel mode.')
 
-        self.x_dir = x_y_metadata.x_dir
         self.x_ids = x_ids
+        self.x_dir = x_y_metadata.x_dir
         self.in_x = x_y_metadata.in_x
         self.in_y = x_y_metadata.in_y
         self.y_dir = x_y_metadata.y_dir
@@ -82,31 +82,29 @@ class DataGenerator(Sequence):
         return x, y
 
     def _create_x_batch(self,
-                        batch_x_ids: List[str]) -> np.ndarray:
+                        batch_x_ids: List[Tuple[str, str, str]]) -> np.ndarray:
         x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
                      dtype=np.float32)
 
-        for idx, x_id in enumerate(batch_x_ids):
-            x_data = np.load(os.path.join(self.x_dir, x_id))
-
+        for idx, (_, mel_path, base_mel_path) in enumerate(batch_x_ids):
             if self.channel_mode == 1:
-                mel = x_data['mel']
-                base_mel = x_data['base_mel']
+                mel = np.load(mel_path)['mel']
+                base_mel = np.load(base_mel_path)['mel']
                 x[idx, :, :, 0] = mel
                 x[idx, :, :, 1] = base_mel
             elif self.channel_mode == 0:
-                mel = x_data['mel']
+                mel = np.load(mel_path)['mel']
                 x[idx, :, :, 0] = mel
                 x[idx, :, :, 1] = mel
             else:
-                base_mel = x_data['base_mel']
+                base_mel = np.load(base_mel_path)['mel']
                 x[idx, :, :, 0] = base_mel
                 x[idx, :, :, 1] = base_mel
 
         return x
 
-    def _create_y_batch(self,
-                        batch_x_ids: List[str]) -> List[np.ndarray]:
+    def _create_y_batch(
+            self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:
         y_bin = None
         y_cates = []
         y_cont = None
@@ -119,7 +117,7 @@ class DataGenerator(Sequence):
         if self.n_cont:
             y_cont = np.empty((self.batch_size, self.n_cont), dtype=np.float32)
 
-        for idx, x_id in enumerate(batch_x_ids):
+        for idx, (x_id, _, _) in enumerate(batch_x_ids):
             y_id = f'{x_id}__y_{self.y_params_str}.npz'
             y_data = np.load(os.path.join(self.y_dir, y_id))
             if self.n_bin:
@@ -185,6 +183,7 @@ def train_model_gen(model: Model,
                     epochs: int = 100,
                     patience: int = 10,
                     output_dir_path: str = OUT_DIR,
+                    use_multiprocessing: bool = True,
                     workers: int = 4) -> None:
     save_path = os.path.join(
         output_dir_path,
@@ -203,7 +202,7 @@ def train_model_gen(model: Model,
               validation_data=val_gen,
               epochs=epochs,
               callbacks=[es, cp],
-              use_multiprocessing=True,
+              use_multiprocessing=use_multiprocessing,
               workers=workers,
               verbose=1)
 
@@ -286,12 +285,18 @@ def get_x_y_metadata(data_dir: str,
     assert sample_x_name
     assert sample_x_data is not None
 
-    sample_mel = sample_x_data['mel']
+    sample_mel_path = sample_x_data['mel_path'].item()
+    assert os.path.exists(sample_mel_path)
+    sample_mel = np.load(sample_mel_path)['mel']
+
     log.info(f'Input spectrogram shape = {sample_mel.shape}')
     assert len(sample_mel.shape) == 2
     in_x = sample_mel.shape[0]
     in_y = sample_mel.shape[1]
-    sample_base_mel = sample_x_data['base_mel']
+
+    sample_base_mel_path = sample_x_data['base_mel_path'].item()
+    assert os.path.exists(sample_base_mel_path)
+    sample_base_mel = np.load(sample_base_mel_path)['mel']
     assert sample_mel.shape == sample_base_mel.shape
 
     y_dir = os.path.join(data_dir, 'y')
@@ -369,7 +374,9 @@ def get_x_y_metadata(data_dir: str,
 def get_x_ids(data_dir: str,
               val_split: float = 0.10,
               test_split: float = 0.05,
-              max_n: int = -1) -> (List[str], List[str], List[str]):
+              max_n: int = -1) -> (List[Tuple[str, str, str]],
+                                   List[Tuple[str, str, str]],
+                                   List[Tuple[str, str, str]]):
     assert val_split + test_split < 1.0
 
     x_dir = os.path.join(data_dir, 'x')
@@ -377,7 +384,12 @@ def get_x_ids(data_dir: str,
     for npz_name in os.listdir(x_dir):
         if not npz_name.endswith('.npz'):
             continue
-        x_ids.append(npz_name)
+
+        npz_data = np.load(os.path.join(x_dir, npz_name))
+        mel_path = npz_data['mel_path'].item()
+        base_mel_path = npz_data['base_mel_path'].item()
+        x_ids.append((npz_name, mel_path, base_mel_path))
+
     log.info(f'Found {len(x_ids)} data points.')
 
     np.random.shuffle(x_ids)
@@ -429,13 +441,15 @@ if __name__ == '__main__':
     # max_n = 56000
     max_n = -1
     channel_mode = 1
+    use_multiprocessing = False
     workers = 4
-    model_name = f'basic_shapes__{effect}__{architecture.__name__}' \
-                 f'__cm_{channel_mode}'
+    model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    # model_name = f'basic_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
 
-    # datasets_dir = DATASETS_DIR
-    datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
+    datasets_dir = DATASETS_DIR
+    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+    data_dir = os.path.join(datasets_dir, f'testing__{effect}')
+    # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
@@ -445,6 +459,7 @@ if __name__ == '__main__':
     log.info(f'train_x_ids length = {len(train_x_ids)}')
     log.info(f'val_x_ids length = {len(val_x_ids)}')
     log.info(f'test_x_ids length = {len(test_x_ids)}')
+    log.info(f'batch_size = {batch_size}')
 
     test_x_ids_save_path = os.path.join(
         data_dir,
@@ -480,4 +495,5 @@ if __name__ == '__main__':
                     model_name,
                     epochs=epochs,
                     patience=patience,
+                    use_multiprocessing=use_multiprocessing,
                     workers=workers)

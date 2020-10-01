@@ -269,6 +269,7 @@ fabric.properties
 # User added
 data/audio_render_test/
 data/audio_test_data/
+data/training_eq_l_local/
 data/vst/
 data/datasets/
 data/presets/sample_lib/

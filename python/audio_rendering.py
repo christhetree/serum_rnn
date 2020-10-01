@@ -4,7 +4,7 @@ import logging
 import ntpath
 import os
 from itertools import combinations
-from typing import List, Dict, Optional, Any, Set, Union
+from typing import List, Dict, Optional, Any, Set
 
 import librenderman as rm
 import numpy as np
