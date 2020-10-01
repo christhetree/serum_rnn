@@ -30,7 +30,16 @@ note_length: 1.0
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/sine.fxp
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/triangle.fxp
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/saw.fxp
-preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/square.fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/square.fxp
+
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/ld_iheardulike5ths_[sd].fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/ld_postmodern_talking_[fp].fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/ld_power_5ths_[fp].fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/sq_busy_lines_[lcv].fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/sy_mtron_saw_[sd].fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/sy_runtheharm_[gs].fxp
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/sy_shot_dirt_stab_[im].fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/sy_vintage_bells_[fp].fxp
 render_length: 1.0
 root_dir: /Volumes/samsung_t5/reverse_synthesis/training_eq_l
 sr: 44100

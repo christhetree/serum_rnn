@@ -13,7 +13,8 @@ import yaml
 from scipy.signal import butter, lfilter
 from tqdm import tqdm
 
-from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR, DATASETS_DIR
+from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT, CONFIGS_DIR, \
+    DATASETS_DIR, DATA_DIR
 from effects import get_effect, DESC_TO_PARAM, \
     param_to_effect, PARAM_TO_DESC
 from util import get_render_names, get_mapping, generate_exclude_descs, \
@@ -526,7 +527,8 @@ def process_audio_all_combos(orig_pc: ProcessConfig,
         process_audio(pc)
 
 
-def combine_mels_all_combos(pc: ProcessConfig,
+def combine_mels_all_combos(preset_dir: str,
+                            pc: ProcessConfig,
                             save_dir: str,
                             exclude_effects: Set[str],
                             base_effects: Set[str] = None,
@@ -546,7 +548,6 @@ def combine_mels_all_combos(pc: ProcessConfig,
     log.info(f'All effect combos = {all_combos}')
     log.info(f'Len of effect combos = {len(all_combos)}')
 
-    preset_dir = os.path.split(pc.root_dir)[0]
     npz_prefix = create_save_name(pc)
 
     mels_paths = []
@@ -581,16 +582,34 @@ if __name__ == '__main__':
     # process_audio_all_combos(pc, all_effects)
     # exit()
 
-    # exclude_effects = {'eq'}
-    # exclude_effects = {'compressor'}
-    exclude_effects = {'distortion'}
-    base_effects = all_effects - exclude_effects
+    effect = 'compressor'
+    # effect = 'distortion'
+    # effect = 'eq'
+    # effect = 'phaser'
+    exclude_effects = {effect}
+    presets = ['sine', 'triangle', 'saw', 'square']
+
+    # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
+    renders_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data'
     # datasets_dir = DATASETS_DIR
     datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    # save_path = os.path.join(datasets_dir, 'training_eq_l__eq.npz')
-    # save_path = os.path.join(datasets_dir, 'training_eq_l__compressor.npz')
-    # save_path = os.path.join(datasets_dir, 'eq_testing')
-    # save_path = os.path.join(datasets_dir, 'compressor_testing')
-    save_path = os.path.join(datasets_dir, 'distortion_testing')
-    combine_mels_all_combos(pc, save_path, exclude_effects, base_effects)
+    renders_dir = os.path.join(renders_dir, 'training_eq_l')
+
+    save_name = f'basic_shapes__{effect}'
+    base_effects = all_effects - exclude_effects
+
+    save_dir = os.path.join(datasets_dir, save_name)
+
+    preset_dirs = []
+    for preset in presets:
+        preset_dirs.append(os.path.join(renders_dir,
+                                        f'{preset}__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048'))
+
+    for preset_dir in preset_dirs:
+        combine_mels_all_combos(preset_dir,
+                                pc,
+                                save_dir,
+                                exclude_effects,
+                                base_effects)
+
     exit()

@@ -1,14 +1,12 @@
 import logging
 import os
-from typing import List, Dict, Any, Callable
+from typing import List, Any, Callable
 
-import tensorflow as tf
-import tensorflow.keras.backend as K
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Dense, Flatten, MaxPooling2D, \
-    Conv2D, Dropout, Bidirectional, Permute, Lambda, Conv1D, LSTM, Concatenate
-from tensorflow.keras.losses import sparse_categorical_crossentropy
-from tensorflow.keras.metrics import sparse_categorical_accuracy
+    Conv2D, Dropout, Bidirectional, Permute, Lambda, LSTM, Concatenate, \
+    TimeDistributed, Masking
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.python.framework.ops import Tensor
 
 logging.basicConfig()
@@ -53,12 +51,13 @@ def exposure_cnn(in_x: int,
 
 def baseline_cnn(in_x: int,
                  in_y: int,
+                 n_channels: int = 2,
                  fc_dim: int = 128,
                  dropout: float = 0.5) -> (Tensor, Tensor):
     log.info(f'Using fc_dim of {fc_dim}')
     log.info(f'Using dropout of {dropout}')
 
-    input_img = Input(shape=(in_x, in_y, 2))
+    input_img = Input(shape=(in_x, in_y, n_channels))
     x = Conv2D(32,
                (3, 3),
                strides=(1, 1),
@@ -86,12 +85,13 @@ def baseline_cnn(in_x: int,
 
 def baseline_cnn_2x(in_x: int,
                     in_y: int,
+                    n_channels: int = 2,
                     fc_dim: int = 128,
                     dropout: float = 0.5) -> (Tensor, Tensor):
     log.info(f'Using fc_dim of {fc_dim}')
     log.info(f'Using dropout of {dropout}')
 
-    input_img = Input(shape=(in_x, in_y, 2))
+    input_img = Input(shape=(in_x, in_y, n_channels))
     x = Conv2D(64,
                (3, 3),
                strides=(1, 1),
@@ -117,6 +117,60 @@ def baseline_cnn_2x(in_x: int,
     fc = Dropout(dropout)(x)
 
     return input_img, fc
+
+
+def baseline_lstm(in_x: int,
+                 in_y: int,
+                 fc_dim: int = 128,
+                 dropout: float = 0.5) -> (Tensor, Tensor):
+    log.info(f'Using fc_dim of {fc_dim}')
+    log.info(f'Using dropout of {dropout}')
+
+    input_img = Input(shape=(in_x, in_y, 2))
+    mel = Lambda(lambda t: t[:, :, :, 0])(input_img)
+    base_mel = Lambda(lambda t: t[:, :, :, 1])(input_img)
+
+    x = Permute((2, 1))(mel)
+    x = Bidirectional(LSTM(fc_dim))(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    x_mel = Dropout(dropout)(x)
+
+    x = Permute((2, 1))(base_mel)
+    x = Bidirectional(LSTM(fc_dim))(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    x_base_mel = Dropout(dropout)(x)
+
+    fc = Concatenate()([x_mel, x_base_mel])
+
+    return input_img, fc
+
+
+def baseline_effect_rnn(in_x: int = 128,
+                        in_y: int = 88,
+                        n_effects: int = 5,
+                        lstm_dim: int = 128,
+                        fc_dim: int = 128,
+                        dropout: float = 0.5):
+    input_img, fc = baseline_cnn(in_x, in_y, n_channels=1, dropout=dropout)
+    cnn = Model(input_img, fc)
+
+    img_seq = Input(shape=(None, in_x, in_y, 1))
+    x = Masking(mask_value=0.0)(img_seq)
+    img_emb = TimeDistributed(cnn)(x)
+
+    effect_seq = Input(shape=(None, n_effects + 1))
+    x = Masking(mask_value=0.0)(effect_seq)
+    effect_emb = TimeDistributed(Dense(17, activation='elu'))(x)
+
+    emb = Concatenate(axis=-1)([img_emb, effect_emb])
+
+    x = Bidirectional(LSTM(lstm_dim))(emb)
+    x = Dense(fc_dim, activation='elu')(x)
+    x = Dropout(dropout)(x)
+    out = Dense(n_effects + 1, activation='softmax')(x)
+
+    model = Model([img_seq, effect_seq], out)
+    return model
 
 
 def build_effect_model(in_x: int,
@@ -152,159 +206,50 @@ def build_effect_model(in_x: int,
     return model
 
 
-def build_lstm_classifier(
-        mel_spec_x: int = 128,
-        mel_ts: int = 128,
-        n_class: int = 9,
-        dropout_rate: float = 0.50,
-        lstm_dim: int = 128,
-        fc_dim: int = 128) -> Model:
-    input_img = Input(shape=(mel_spec_x, mel_ts, 1))
-    x = Lambda(lambda t: K.squeeze(t, axis=-1))(input_img)
-    x = Permute((2, 1))(x)
-    x = Bidirectional(LSTM(lstm_dim))(x)
-    x = Dense(fc_dim, activation='elu')(x)
-    x = Dropout(dropout_rate)(x)
-    x = Dense(n_class, activation='softmax')(x)
-    model = Model(input_img, x)
-    return model
+if __name__ == '__main__':
+    model = baseline_effect_rnn()
+    model.summary()
+    import numpy as np
 
+    test_effect_seq = [
+        [
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        ],
+        [
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        ],
+        [
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+        ],
+    ]
 
-def build_cnn_lstm_classifier(
-        mel_spec_x: int = 128,
-        mel_ts: int = 128,
-        n_class: int = 9,
-        dropout_rate: float = 0.50,
-        lstm_dim: int = 128,
-        fc_dim: int = 128) -> Model:
-    input_img = Input(shape=(mel_spec_x, mel_ts, 1))
-    x = Lambda(lambda t: K.squeeze(t, axis=-1))(input_img)
-    x = Permute((2, 1))(x)
-    x = Conv1D(64,
-               3,
-               strides=1,
-               padding='same',
-               activation='elu')(x)
-    x = Bidirectional(LSTM(lstm_dim))(x)
-    x = Dense(fc_dim, activation='elu')(x)
-    x = Dropout(dropout_rate)(x)
-    x = Dense(n_class, activation='softmax')(x)
-    model = Model(input_img, x)
-    return model
+    test_img_seq = [
+        [
+            np.ones((128, 88, 1))
+        ],
+        [
+            np.ones((128, 88, 1)),
+            np.ones((128, 88, 1))
+        ],
+        [
+            np.ones((128, 88, 1)),
+            np.ones((128, 88, 1)),
+            np.ones((128, 88, 1)),
+            np.ones((128, 88, 1))
+        ],
+    ]
 
-
-class MLPBaseline(Model):
-    def __init__(self,
-                 **kwargs: Any) -> None:
-        super(MLPBaseline, self).__init__(**kwargs)
-
-    def call(self, inputs: List[Tensor]) -> List[Tensor]:
-        z_mean, z_log_var, z = self.enc(inputs)
-
-        if self.is_conditional:
-            cond = inputs[-1]
-            return self.dec([z, cond])
-        else:
-            return self.dec(z)
-
-    def rec_loss(self, data: Tensor, reconstruction: Tensor) -> Tensor:
-        rec_loss = tf.reduce_mean(
-            sparse_categorical_crossentropy(data, reconstruction)
-        )
-        # rec_loss *= 32.0
-        return rec_loss
-
-    def rec_acc(self, data: Tensor, reconstruction: Tensor) -> Tensor:
-        rec_acc = tf.reduce_mean(
-            sparse_categorical_accuracy(data, reconstruction)
-        )
-        return rec_acc
-
-    def train_step(self,
-                   data: (List[Tensor], List[Tensor])) -> Dict[str, float]:
-        if isinstance(data, tuple):
-            data = data[0]  # Only care about X since it's an autoencoder
-        with tf.GradientTape() as tape:
-            if self.is_conditional:
-                melody_data, bass_data, drums_data, cond_data = data
-                z_mean, z_log_var, z = self.enc(data)
-                melody_rec, bass_rec, drums_rec = self.dec([z, cond_data])
-            else:
-                melody_data, bass_data, drums_data = data
-                z_mean, z_log_var, z = self.enc(data)
-                melody_rec, bass_rec, drums_rec = self.dec(z)
-
-            melody_rec_loss = self.rec_loss(melody_data, melody_rec)
-            bass_rec_loss = self.rec_loss(bass_data, bass_rec)
-            drums_rec_loss = self.rec_loss(drums_data, drums_rec)
-            rec_loss = melody_rec_loss + bass_rec_loss + drums_rec_loss
-
-            melody_rec_acc = self.rec_acc(melody_data, melody_rec)
-            bass_rec_acc = self.rec_acc(bass_data, bass_rec)
-            drums_rec_acc = self.rec_acc(drums_data, drums_rec)
-            rec_acc = tf.reduce_mean([melody_rec_acc, bass_rec_acc, drums_rec_acc])
-
-            kl_loss = 1.0 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
-            kl_loss = tf.reduce_mean(kl_loss)
-            kl_loss *= -0.5
-
-            total_loss = rec_loss + kl_loss
-
-        grads = tape.gradient(total_loss, self.trainable_weights)
-        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-
-        return {
-            'loss': total_loss,
-            'rec_loss': rec_loss,
-            'kl_loss': kl_loss,
-            'm_rec_loss': melody_rec_loss,
-            'b_rec_loss': bass_rec_loss,
-            'd_rec_loss': drums_rec_loss,
-            'rec_acc': rec_acc,
-            'm_rec_acc': melody_rec_acc,
-            'b_rec_acc': bass_rec_acc,
-            'd_rec_acc': drums_rec_acc,
-        }
-
-    def test_step(self,
-                  data: (List[Tensor], List[Tensor])) -> Dict[str, float]:
-        if isinstance(data, tuple):
-            data = data[0]  # Only care about X since it's an autoencoder
-
-        if self.is_conditional:
-            melody_data, bass_data, drums_data, cond_data = data
-            z_mean, z_log_var, z = self.enc(data)
-            melody_rec, bass_rec, drums_rec = self.dec([z, cond_data])
-        else:
-            melody_data, bass_data, drums_data = data
-            z_mean, z_log_var, z = self.enc(data)
-            melody_rec, bass_rec, drums_rec = self.dec(z)
-
-        melody_rec_loss = self.rec_loss(melody_data, melody_rec)
-        bass_rec_loss = self.rec_loss(bass_data, bass_rec)
-        drums_rec_loss = self.rec_loss(drums_data, drums_rec)
-        rec_loss = melody_rec_loss + bass_rec_loss + drums_rec_loss
-
-        melody_rec_acc = self.rec_acc(melody_data, melody_rec)
-        bass_rec_acc = self.rec_acc(bass_data, bass_rec)
-        drums_rec_acc = self.rec_acc(drums_data, drums_rec)
-        rec_acc = tf.reduce_mean([melody_rec_acc, bass_rec_acc, drums_rec_acc])
-
-        kl_loss = 1.0 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
-        kl_loss = tf.reduce_mean(kl_loss)
-        kl_loss *= -0.5
-
-        total_loss = rec_loss + kl_loss
-
-        return {
-            'loss': total_loss,
-            'rec_loss': rec_loss,
-            'kl_loss': kl_loss,
-            'm_rec_loss': melody_rec_loss,
-            'b_rec_loss': bass_rec_loss,
-            'd_rec_loss': drums_rec_loss,
-            'rec_acc': rec_acc,
-            'm_rec_acc': melody_rec_acc,
-            'b_rec_acc': bass_rec_acc,
-            'd_rec_acc': drums_rec_acc,
-        }
+    padded_effect_seq = pad_sequences(test_effect_seq,
+                                      value=0.0,
+                                      padding='post',
+                                      dtype='float32')
+    padded_img_seq = pad_sequences(test_img_seq,
+                                   value=0.0,
+                                   padding='post',
+                                   dtype='float32')
+    herp = model.predict([padded_img_seq, padded_effect_seq])
+    # derp = 1

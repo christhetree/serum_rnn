@@ -101,7 +101,26 @@ def crawl_presets(root_dir: str,
 
 
 if __name__ == '__main__':
-    find_fxp_differences(os.path.join(PRESETS_DIR, 'default.fxp'),
-                         os.path.join(PRESETS_DIR, 'chorus.fxp'))
-    from effects import get_effect
-    get_effect('compressor')
+    from effects import effects, get_effect
+    descriptions = []
+
+    presets_path = os.path.join(PRESETS_DIR, 'subset')
+    for preset in os.listdir(presets_path):
+        log.info(preset)
+        preset_path = os.path.join(presets_path, preset)
+        engine = setup_serum(preset_path)
+        descriptions.append((preset, engine.get_plugin_parameters_description()))
+        # new_name = preset.lower().replace(' ', '_')
+        # log.info(new_name)
+        #
+        # for effect in effects.values():
+        #     set_preset(engine, effect.default)
+        #
+        # engine.save_preset(os.path.join(presets_path, new_name))
+
+    print(descriptions[1][1].replace('\n', '_'))
+    for preset, d in descriptions:
+        if d != descriptions[1][1]:
+            print(preset)
+            print(d.replace('\n', '_'))
+    exit()

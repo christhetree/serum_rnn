@@ -214,38 +214,23 @@ if __name__ == '__main__':
     gran = 100
     # effect = 'chorus'
     # params = {118, 119, 120, 121, 122, 123}
-    # effect = 'compressor'
-    # params = {270, 271, 272}
-    effect = 'distortion'
-    params = {97, 99}
+    effect = 'compressor'
+    params = {270, 271, 272}
+    # effect = 'distortion'
+    # params = {97, 99}
     # effect = 'eq'
     # params = {88, 90, 92, 94}
-    # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
     # effect = 'flanger'
-    # params = {105, 106, 107, 108}
+    # params = {105, 106, 107}
     # effect = 'phaser'
-    # params = {111, 112, 113, 114, 115}
+    # params = {111, 112, 113, 114}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
 
-    # params = {88, 89, 90, 91}
-
-    # generate_y(os.path.join(DATA_DIR, f'audio_render_test/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
-    # generate_y(os.path.join(DATA_DIR, f'audio_test_data/default__sr_44100__nl_1.00__rl_1.00__vel_127__midi_040/{effect}__gran_{gran}/processing/mel__sr_44100__frames_44544__n_fft_4096__n_mels_128__hop_len_512__norm_audio_F__norm_mel_T__n_{n}.npz'),
-    # generate_y(os.path.join(DATA_DIR, 'combined_compressor_200k.npz'),
-    # generate_y(os.path.join(DATA_DIR, 'combined_eq_200k.npz'),
-    # generate_y(os.path.join(DATA_DIR, 'combined_distortion_200k.npz'),
-
     # datasets_dir = DATASETS_DIR
     datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    # generate_y(os.path.join(datasets_dir, f'training_eq_l__{effect}.npz'),
-    #            params,
-    #            gran)
-
-    # generate_y_individual(os.path.join(datasets_dir, 'eq_testing'),
-    # generate_y_individual(os.path.join(datasets_dir, 'compressor_testing'),
-    generate_y_individual(os.path.join(datasets_dir, 'distortion_testing'),
+    generate_y_individual(os.path.join(datasets_dir, f'basic_shapes__{effect}'),
                           params)

@@ -11,7 +11,8 @@ from tensorflow.python.keras.utils.data_utils import Sequence
 
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, param_to_effect
-from models import build_effect_model, baseline_cnn_2x, baseline_cnn
+from models import build_effect_model, baseline_cnn_2x, baseline_cnn, \
+    exposure_cnn, baseline_lstm
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -409,9 +410,9 @@ if __name__ == '__main__':
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
     # effect = 'flanger'
-    # params = {105, 106, 107, 108}
+    # params = {105, 106, 107}
     # effect = 'phaser'
-    # params = {111, 112, 113, 114, 115}
+    # params = {111, 112, 113, 114}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
@@ -419,20 +420,22 @@ if __name__ == '__main__':
     architecture = baseline_cnn
     # architecture = baseline_cnn_2x
     # architecture = exposure_cnn
+    # architecture = baseline_lstm
     batch_size = 128
     epochs = 100
     val_split = 0.10
     test_split = 0.05
     patience = 10
-    model_name = f'{effect}_{architecture.__name__}'
-    max_n = 56000
-    # max_n = -1
+    # max_n = 56000
+    max_n = -1
     channel_mode = 1
-    workers = 8
+    workers = 4
+    model_name = f'basic_shapes__{effect}__{architecture.__name__}' \
+                 f'__cm_{channel_mode}'
 
     # datasets_dir = DATASETS_DIR
     datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    data_dir = os.path.join(datasets_dir, f'{effect}_testing')
+    data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
@@ -443,7 +446,10 @@ if __name__ == '__main__':
     log.info(f'val_x_ids length = {len(val_x_ids)}')
     log.info(f'test_x_ids length = {len(test_x_ids)}')
 
-    test_x_ids_save_path = os.path.join(data_dir, 'test_x_ids.npz')
+    test_x_ids_save_path = os.path.join(
+        data_dir,
+        f'test_x_ids__{architecture.__name__}__cm_{channel_mode}.npz'
+    )
     np.savez(test_x_ids_save_path, test_x_ids=test_x_ids)
 
     train_gen = DataGenerator(train_x_ids,
