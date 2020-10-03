@@ -8,6 +8,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.python.keras.utils.data_utils import Sequence
+from tqdm import tqdm
 
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, param_to_effect
@@ -156,7 +157,7 @@ def train_model(
     save_path = os.path.join(
         output_dir_path,
         # model_name + '_e{epoch:03d}_vl{val_loss:.4f}.h5'
-        f'{model_name}_best.h5'
+        f'{model_name}__best.h5'
     )
     es = EarlyStopping(monitor='val_loss',
                        min_delta=0,
@@ -184,11 +185,11 @@ def train_model_gen(model: Model,
                     patience: int = 10,
                     output_dir_path: str = OUT_DIR,
                     use_multiprocessing: bool = True,
-                    workers: int = 4) -> None:
+                    workers: int = 8) -> None:
     save_path = os.path.join(
         output_dir_path,
         # model_name + '_e{epoch:03d}_vl{val_loss:.4f}.h5'
-        f'{model_name}_best.h5'
+        f'{model_name}__best.h5'
     )
     es = EarlyStopping(monitor='val_loss',
                        min_delta=0,
@@ -374,63 +375,77 @@ def get_x_y_metadata(data_dir: str,
 def get_x_ids(data_dir: str,
               val_split: float = 0.10,
               test_split: float = 0.05,
-              max_n: int = -1) -> (List[Tuple[str, str, str]],
-                                   List[Tuple[str, str, str]],
-                                   List[Tuple[str, str, str]]):
+              max_n: int = -1,
+              use_cached: bool = True) -> (List[Tuple[str, str, str]],
+                                           List[Tuple[str, str, str]],
+                                           List[Tuple[str, str, str]]):
     assert val_split + test_split < 1.0
+    train_x_ids_path = os.path.join(data_dir, 'train_x_ids.npy')
+    val_x_ids_path = os.path.join(data_dir, 'val_x_ids.npy')
+    test_x_ids_path = os.path.join(data_dir, 'test_x_ids.npy')
 
-    x_dir = os.path.join(data_dir, 'x')
-    x_ids = []
-    for npz_name in os.listdir(x_dir):
-        if not npz_name.endswith('.npz'):
-            continue
+    if use_cached \
+        and all(os.path.exists(p)
+                for p in [train_x_ids_path, val_x_ids_path, test_x_ids_path]):
+        log.info('Using cached x_ids.')
+        train_x_ids = np.load(train_x_ids_path)
+        val_x_ids = np.load(val_x_ids_path)
+        test_x_ids = np.load(test_x_ids_path)
+    else:
+        log.info('Creating new x_ids.')
+        x_dir = os.path.join(data_dir, 'x')
+        x_ids = []
+        for npz_name in tqdm(os.listdir(x_dir)):
+            if not npz_name.endswith('.npz'):
+                continue
 
-        npz_data = np.load(os.path.join(x_dir, npz_name))
-        mel_path = npz_data['mel_path'].item()
-        base_mel_path = npz_data['base_mel_path'].item()
-        x_ids.append((npz_name, mel_path, base_mel_path))
+            npz_data = np.load(os.path.join(x_dir, npz_name))
+            mel_path = npz_data['mel_path'].item()
+            base_mel_path = npz_data['base_mel_path'].item()
+            x_ids.append((npz_name, mel_path, base_mel_path))
 
-    log.info(f'Found {len(x_ids)} data points.')
+        log.info(f'Found {len(x_ids)} data points.')
 
-    np.random.shuffle(x_ids)
-    if max_n > 0:
-        x_ids = x_ids[:max_n]
+        np.random.shuffle(x_ids)
+        if max_n > 0:
+            x_ids = x_ids[:max_n]
 
-    val_idx = int(len(x_ids) * (1.0 - val_split - test_split))
-    test_idx = int(len(x_ids) * (1.0 - test_split))
-    train_x_ids = x_ids[:val_idx]
-    val_x_ids = x_ids[val_idx:test_idx]
-    test_x_ids = x_ids[test_idx:]
+        val_idx = int(len(x_ids) * (1.0 - val_split - test_split))
+        test_idx = int(len(x_ids) * (1.0 - test_split))
+
+        train_x_ids = x_ids[:val_idx]
+        val_x_ids = x_ids[val_idx:test_idx]
+        test_x_ids = x_ids[test_idx:]
+
+        log.info('Caching x_ids.')
+        np.save(train_x_ids_path, train_x_ids)
+        np.save(val_x_ids_path, val_x_ids)
+        np.save(test_x_ids_path, test_x_ids)
 
     return train_x_ids, val_x_ids, test_x_ids
 
 
 if __name__ == '__main__':
-    # n = 14014
-    # n = 25000
-    # gran = 1000
-    gran = 100
     # effect = 'chorus'
     # params = {118, 119, 120, 121, 122, 123}
-    effect = 'compressor'
-    params = {270, 271, 272}
+    # effect = 'compressor'
+    # params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
     # params = {88, 90, 92, 94}
-    # params = {88, 89, 90, 91, 92, 93, 94, 95}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
-    # effect = 'flanger'
-    # params = {105, 106, 107}
+    effect = 'flanger'
+    params = {105, 106, 107}
     # effect = 'phaser'
     # params = {111, 112, 113, 114}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
 
-    architecture = baseline_cnn
-    # architecture = baseline_cnn_2x
+    # architecture = baseline_cnn
+    architecture = baseline_cnn_2x
     # architecture = exposure_cnn
     # architecture = baseline_lstm
     batch_size = 128
@@ -438,34 +453,30 @@ if __name__ == '__main__':
     val_split = 0.10
     test_split = 0.05
     patience = 10
+    used_cached_x_ids = True
     # max_n = 56000
     max_n = -1
     channel_mode = 1
-    use_multiprocessing = False
-    workers = 4
-    model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    # model_name = f'basic_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    use_multiprocessing = True
+    workers = 8
+    # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    model_name = f'basic_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
 
     datasets_dir = DATASETS_DIR
     # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    data_dir = os.path.join(datasets_dir, f'testing__{effect}')
-    # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
+    # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
+    data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
                                                    val_split=val_split,
                                                    test_split=test_split,
-                                                   max_n=max_n)
+                                                   max_n=max_n,
+                                                   use_cached=used_cached_x_ids)
     log.info(f'train_x_ids length = {len(train_x_ids)}')
     log.info(f'val_x_ids length = {len(val_x_ids)}')
     log.info(f'test_x_ids length = {len(test_x_ids)}')
     log.info(f'batch_size = {batch_size}')
-
-    test_x_ids_save_path = os.path.join(
-        data_dir,
-        f'test_x_ids__{architecture.__name__}__cm_{channel_mode}.npz'
-    )
-    np.savez(test_x_ids_save_path, test_x_ids=test_x_ids)
 
     train_gen = DataGenerator(train_x_ids,
                               x_y_metadata,

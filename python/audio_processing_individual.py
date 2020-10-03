@@ -144,6 +144,9 @@ def process_audio_all_combos(orig_pc: ProcessConfig,
 
 def get_base_effect_info(orig_effect_dir_name: str,
                          exclude_descs: Set[str] = None) -> (str, List[str]):
+    if exclude_descs is None:
+        exclude_descs = set()
+
     orig_effect_dir_info = parse_save_name(orig_effect_dir_name, is_dir=True)
     gran = orig_effect_dir_info['gran']
     orig_effect_names = orig_effect_dir_info['name'].split('_')
@@ -283,28 +286,32 @@ if __name__ == '__main__':
     pc = ProcessConfig(**process_config)
     all_effects = {'flanger', 'phaser', 'compressor', 'eq', 'distortion'}
 
-    process_audio_all_combos(pc, all_effects)
-    exit()
+    # process_audio_all_combos(pc, all_effects)
+    # exit()
 
-    effect = 'compressor'
+    # effect = 'compressor'
     # effect = 'distortion'
     # effect = 'eq'
+    effect = 'flanger'
     # effect = 'phaser'
     exclude_effects = {effect}
-    presets = ['ld_postmodern_talking_[fp]']
-    # presets = ['sine', 'triangle', 'saw', 'square']
+    # presets = ['ld_postmodern_talking_[fp]']
+    presets = ['sine', 'triangle', 'saw', 'square']
+    # presets = ['ld_power_5ths_[fp]', 'sy_mtron_saw_[sd]', 'sy_shot_dirt_stab_[im]', 'sy_vintage_bells_[fp]']
+    # presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
 
-    renders_dir = os.path.join(DATA_DIR)
+    # renders_dir = DATA_DIR
     # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
-    # renders_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data'
+    renders_dir = '/home/testacc/samsung_t5_local/reverse_synthesis'
+
     datasets_dir = DATASETS_DIR
     # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
 
-    renders_dir = os.path.join(renders_dir, 'training_eq_l_local')
-    # renders_dir = os.path.join(renders_dir, 'training_eq_l')
+    # renders_dir = os.path.join(renders_dir, 'training_eq_l_local')
+    renders_dir = os.path.join(renders_dir, 'training_eq_l')
 
-    save_name = f'testing__{effect}'
-    # save_name = f'basic_shapes__{effect}'
+    # save_name = f'testing__{effect}'
+    save_name = f'basic_shapes__{effect}'
     base_effects = all_effects - exclude_effects
 
     save_dir = os.path.join(datasets_dir, save_name)
@@ -319,6 +326,7 @@ if __name__ == '__main__':
                                 pc,
                                 save_dir,
                                 exclude_effects,
-                                base_effects)
+                                base_effects,
+                                gran=100)
 
     exit()

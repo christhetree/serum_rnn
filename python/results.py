@@ -146,3 +146,9 @@
 # loss: 0.0211 - mae: 0.1103 - val_loss: 0.0225 - val_mae: 0.1065  (x, x)
 # baseline cnn
 # loss: 0.0118 - mae: 0.0773 - val_loss: 0.0110 - val_mae: 0.0692
+
+
+# effect rnn
+
+# baseline cnn 2x
+# epoch 4 loss: 0.1635 - acc: 0.9439 - val_loss: 0.1124 - val_acc: 0.9589

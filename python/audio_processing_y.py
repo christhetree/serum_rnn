@@ -214,16 +214,16 @@ if __name__ == '__main__':
     gran = 100
     # effect = 'chorus'
     # params = {118, 119, 120, 121, 122, 123}
-    effect = 'compressor'
-    params = {270, 271, 272}
+    # effect = 'compressor'
+    # params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
     # params = {88, 90, 92, 94}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
-    # effect = 'flanger'
-    # params = {105, 106, 107}
+    effect = 'flanger'
+    params = {105, 106, 107}
     # effect = 'phaser'
     # params = {111, 112, 113, 114}
     # effect = 'reverb-hall'
@@ -232,6 +232,5 @@ if __name__ == '__main__':
 
     datasets_dir = DATASETS_DIR
     # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
-    # generate_y_individual(os.path.join(datasets_dir, f'basic_shapes__{effect}'),
-    generate_y_individual(os.path.join(datasets_dir, f'testing__{effect}'),
-                          params)
+    generate_y_individual(
+        os.path.join(datasets_dir, f'basic_shapes__{effect}'), params)

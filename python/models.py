@@ -147,27 +147,34 @@ def baseline_lstm(in_x: int,
 
 def baseline_effect_rnn(in_x: int = 128,
                         in_y: int = 88,
+                        n_channels: int = 2,
                         n_effects: int = 5,
                         lstm_dim: int = 128,
                         fc_dim: int = 128,
-                        dropout: float = 0.5):
-    input_img, fc = baseline_cnn(in_x, in_y, n_channels=1, dropout=dropout)
-    cnn = Model(input_img, fc)
+                        dropout: float = 0.5,
+                        cnn_architecture: Callable = baseline_cnn_2x,
+                        cnn_fc_dim: int = 128,
+                        cnn_dropout: float = 0.5):
+    cnn_input_img, cnn_fc = cnn_architecture(in_x,
+                                             in_y,
+                                             fc_dim=cnn_fc_dim,
+                                             n_channels=n_channels,
+                                             dropout=cnn_dropout)
+    cnn = Model(cnn_input_img, cnn_fc, name='cnn')
 
-    img_seq = Input(shape=(None, in_x, in_y, 1))
-    x = Masking(mask_value=0.0)(img_seq)
-    img_emb = TimeDistributed(cnn)(x)
+    img_seq = Input(shape=(None, in_x, in_y, n_channels), name='img_seq')
+    x = Masking(mask_value=0.0, name='img_seq_mask')(img_seq)
+    img_emb = TimeDistributed(cnn, name='img_emb')(x)
 
-    effect_seq = Input(shape=(None, n_effects + 1))
-    x = Masking(mask_value=0.0)(effect_seq)
-    effect_emb = TimeDistributed(Dense(17, activation='elu'))(x)
+    effect_seq = Input(shape=(None, n_effects + 1), name='effect_seq')
+    effect_emb = Masking(mask_value=0.0, name='effect_seq_mask')(effect_seq)
 
-    emb = Concatenate(axis=-1)([img_emb, effect_emb])
+    emb = Concatenate(axis=-1, name='emb')([img_emb, effect_emb])
 
     x = Bidirectional(LSTM(lstm_dim))(emb)
     x = Dense(fc_dim, activation='elu')(x)
     x = Dropout(dropout)(x)
-    out = Dense(n_effects + 1, activation='softmax')(x)
+    out = Dense(n_effects, activation='softmax', name='next_effect')(x)
 
     model = Model([img_seq, effect_seq], out)
     return model
@@ -211,6 +218,8 @@ if __name__ == '__main__':
     model.summary()
     import numpy as np
 
+    test_target_img = np.ones((3, 128, 88, 1))
+
     test_effect_seq = [
         [
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -243,13 +252,19 @@ if __name__ == '__main__':
         ],
     ]
 
+    new_seq = [[np.concatenate([img, target], axis=-1)
+                for img in seq] for target, seq in zip(test_target_img, test_img_seq)]
+
     padded_effect_seq = pad_sequences(test_effect_seq,
                                       value=0.0,
                                       padding='post',
                                       dtype='float32')
-    padded_img_seq = pad_sequences(test_img_seq,
+    padded_img_seq = pad_sequences(new_seq,
                                    value=0.0,
                                    padding='post',
                                    dtype='float32')
+
+    log.info(f'padded_img_seq shape = {padded_img_seq.shape}')
+    log.info(f'padded_effect_seq shape = {padded_effect_seq.shape}')
     herp = model.predict([padded_img_seq, padded_effect_seq])
     # derp = 1
