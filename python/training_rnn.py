@@ -17,7 +17,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 0
+GPU = 1
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -200,10 +200,12 @@ if __name__ == '__main__':
     in_y = 88
     n_channels = 2
     n_effects = len(EFFECT_TO_IDX_MAPPING)
-    # cnn_architecture = baseline_cnn
-    cnn_architecture = baseline_cnn_2x
+
+    cnn_architecture = baseline_cnn
+    # cnn_architecture = baseline_cnn_2x
     # cnn_architecture = exposure_cnn
     # cnn_architecture = baseline_lstm
+
     batch_size = 32
     epochs = 100
     val_split = 0.10
@@ -216,11 +218,15 @@ if __name__ == '__main__':
     use_multiprocessing = True
     workers = 8
     # model_name = f'testing__rnn'
-    model_name = f'basic_shapes__rnn__{cnn_architecture.__name__}'
+    # model_name = f'basic_shapes__rnn__{cnn_architecture.__name__}'
+    model_name = f'adv_shapes__rnn__{cnn_architecture.__name__}'
+    # model_name = f'temporal__rnn__{cnn_architecture.__name__}'
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'testing__rnn')
-    data_dir = os.path.join(datasets_dir, f'basic_shapes__rnn')
+    # data_dir = os.path.join(datasets_dir, f'basic_shapes__rnn')
+    data_dir = os.path.join(datasets_dir, f'adv_shapes__rnn')
+    # data_dir = os.path.join(datasets_dir, f'temporal__rnn')
 
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
                                                    val_split=val_split,

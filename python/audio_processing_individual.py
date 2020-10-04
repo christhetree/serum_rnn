@@ -289,16 +289,16 @@ if __name__ == '__main__':
     # process_audio_all_combos(pc, all_effects)
     # exit()
 
-    # effect = 'compressor'
+    effect = 'compressor'
     # effect = 'distortion'
     # effect = 'eq'
-    effect = 'flanger'
+    # effect = 'flanger'
     # effect = 'phaser'
     exclude_effects = {effect}
     # presets = ['ld_postmodern_talking_[fp]']
-    presets = ['sine', 'triangle', 'saw', 'square']
+    # presets = ['sine', 'triangle', 'saw', 'square']
     # presets = ['ld_power_5ths_[fp]', 'sy_mtron_saw_[sd]', 'sy_shot_dirt_stab_[im]', 'sy_vintage_bells_[fp]']
-    # presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
+    presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
 
     # renders_dir = DATA_DIR
     # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
@@ -311,7 +311,9 @@ if __name__ == '__main__':
     renders_dir = os.path.join(renders_dir, 'training_eq_l')
 
     # save_name = f'testing__{effect}'
-    save_name = f'basic_shapes__{effect}'
+    # save_name = f'basic_shapes__{effect}'
+    # save_name = f'adv_shapes__{effect}'
+    save_name = f'temporal__{effect}'
     base_effects = all_effects - exclude_effects
 
     save_dir = os.path.join(datasets_dir, save_name)
@@ -327,6 +329,6 @@ if __name__ == '__main__':
                                 save_dir,
                                 exclude_effects,
                                 base_effects,
-                                gran=100)
+                                gran=100)  # TODO
 
     exit()

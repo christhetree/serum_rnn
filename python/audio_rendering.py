@@ -61,9 +61,12 @@ class RenderConfig:
 
 
 class PatchGenerator:
-    def __init__(self, rc: RenderConfig) -> None:
+    def __init__(self,
+                 gran: int,
+                 rc_effects: List[Dict[str, Any]] = None) -> None:
         super().__init__()
-        self.gran = rc.gran
+        if rc_effects is None:
+            rc_effects = []
 
         n_combos = 1
         params = set()
@@ -72,48 +75,47 @@ class PatchGenerator:
         param_n_choices = {}
         param_defaults = {}
 
-        if rc.effects is not None:
-            for effect_render_data in rc.effects:
-                effect_name = effect_render_data['name']
-                if effect_name in effect_names:
-                    log.warning(f'Duplicate effect "{effect_name}" in config.')
+        for effect_render_data in rc_effects:
+            effect_name = effect_render_data['name']
+            if effect_name in effect_names:
+                log.warning(f'Duplicate effect "{effect_name}" in config.')
+                continue
+
+            effect_names.add(effect_name)
+            effect = get_effect(effect_name)
+
+            for desc, choices in effect_render_data.items():
+                if desc == 'name':
                     continue
 
-                effect_names.add(effect_name)
-                effect = get_effect(effect_name)
+                if desc not in DESC_TO_PARAM:
+                    raise KeyError(f'{desc} not a valid param description.')
 
-                for desc, choices in effect_render_data.items():
-                    if desc == 'name':
-                        continue
+                param = DESC_TO_PARAM[desc]
+                params.add(param)
+                default_value = effect.default[param]
+                default = int((default_value * gran) + 0.5)
+                param_defaults[param] = default
 
-                    if desc not in DESC_TO_PARAM:
-                        raise KeyError(f'{desc} not a valid param description.')
+                if effect.binary and param in effect.binary:
+                    n_choices = 2
+                elif effect.categorical and param in effect.categorical:
+                    n_choices = effect.categorical[param]
+                elif effect.continuous and param in effect.continuous:
+                    n_choices = gran + 1
+                else:
+                    raise KeyError(
+                        f'{desc} could not be found in {effect.name}.')
 
-                    param = DESC_TO_PARAM[desc]
-                    params.add(param)
-                    default_value = effect.default[param]
-                    default = int((default_value * self.gran) + 0.5)
-                    param_defaults[param] = default
+                len_choices = len(choices)
+                if len_choices > 0:
+                    n_combos *= len_choices
+                    param_choices[param] = choices
+                else:
+                    n_combos *= n_choices
+                    param_choices[param] = n_choices
 
-                    if effect.binary and param in effect.binary:
-                        n_choices = 2
-                    elif effect.categorical and param in effect.categorical:
-                        n_choices = effect.categorical[param]
-                    elif effect.continuous and param in effect.continuous:
-                        n_choices = rc.gran + 1
-                    else:
-                        raise KeyError(
-                            f'{desc} could not be found in {effect.name}.')
-
-                    len_choices = len(choices)
-                    if len_choices > 0:
-                        n_combos *= len_choices
-                        param_choices[param] = choices
-                    else:
-                        n_combos *= n_choices
-                        param_choices[param] = n_choices
-
-                    param_n_choices[param] = n_choices
+                param_n_choices[param] = n_choices
 
         curr_params = sorted(list(params))
         effect_names = sorted(list(effect_names))
@@ -133,6 +135,7 @@ class PatchGenerator:
             param_v = float(choice / (n_choices - 1))
             curr_patch[param] = param_v
 
+        self.gran = gran
         self.n_combos = n_combos
         self.params = params
         self.effect_names = effect_names

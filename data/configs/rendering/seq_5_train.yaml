@@ -33,9 +33,9 @@ sr: 44100
 vel: 127
 use_hashes: True
 
-preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/sine.fxp
+#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/sine.fxp
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/triangle.fxp
-#preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/saw.fxp
+preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/saw.fxp
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/square.fxp
 
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/subset/ld_power_5ths_[fp].fxp

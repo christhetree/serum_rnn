@@ -436,10 +436,10 @@ if __name__ == '__main__':
     # params = {88, 90, 92, 94}
     # effect = 'filter'
     # params = {142, 143, 144, 145, 146, 268}
-    effect = 'flanger'
-    params = {105, 106, 107}
-    # effect = 'phaser'
-    # params = {111, 112, 113, 114}
+    # effect = 'flanger'
+    # params = {105, 106, 107}
+    effect = 'phaser'
+    params = {111, 112, 113, 114}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
@@ -460,12 +460,17 @@ if __name__ == '__main__':
     use_multiprocessing = True
     workers = 8
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    model_name = f'basic_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    # model_name = f'basic_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    # model_name = f'adv_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    model_name = f'temporal__{effect}__{architecture.__name__}__cm_{channel_mode}'
 
     datasets_dir = DATASETS_DIR
     # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
     # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
-    data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
+    # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
+    # data_dir = os.path.join(datasets_dir, f'adv_shapes__{effect}')
+    data_dir = os.path.join(datasets_dir, f'temporal__{effect}')
+    log.info(f'data_dir = {data_dir}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,

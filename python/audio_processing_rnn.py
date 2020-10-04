@@ -175,7 +175,10 @@ if __name__ == '__main__':
 
     all_effects = {'flanger', 'phaser', 'compressor', 'eq', 'distortion'}
     # presets = ['ld_postmodern_talking_[fp]']
-    presets = ['sine', 'triangle', 'saw', 'square']
+    # presets = ['sine', 'triangle', 'saw', 'square']
+    # presets = ['ld_power_5ths_[fp]', 'sy_mtron_saw_[sd]', 'sy_shot_dirt_stab_[im]', 'sy_vintage_bells_[fp]']
+    presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
+
 
     # renders_dir = os.path.join(DATA_DIR)
     # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
@@ -188,7 +191,9 @@ if __name__ == '__main__':
     renders_dir = os.path.join(renders_dir, 'training_eq_l')
 
     # save_name = f'testing__rnn'
-    save_name = f'basic_shapes__rnn'
+    # save_name = f'basic_shapes__rnn'
+    # save_name = f'adv_shapes__rnn'
+    save_name = f'temporal__rnn'
     save_dir = os.path.join(datasets_dir, save_name)
 
     preset_dirs = []

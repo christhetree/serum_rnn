@@ -29,7 +29,7 @@ class Effect:
             self.default = default
 
         if binary is None:
-            self.binary = set
+            self.binary = set()
         else:
             assert isinstance(binary, list)
             self.binary = set(binary)
@@ -41,7 +41,7 @@ class Effect:
             self.categorical = categorical
 
         if continuous is None:
-            self.continuous = set
+            self.continuous = set()
         else:
             assert isinstance(continuous, list)
             self.continuous = set(continuous)
