@@ -234,5 +234,7 @@ if __name__ == '__main__':
     # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
     generate_y_individual(
         # os.path.join(datasets_dir, f'basic_shapes__{effect}'), params)
+        # os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all'), params)
+        os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all__bi'), params)
         # os.path.join(datasets_dir, f'adv_shapes__{effect}'), params)
-        os.path.join(datasets_dir, f'temporal__{effect}'), params)
+        # os.path.join(datasets_dir, f'temporal__{effect}'), params)

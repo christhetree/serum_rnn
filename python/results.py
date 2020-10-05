@@ -115,6 +115,9 @@
 # loss: 0.0120 - mae: 0.0813 - val_loss: 0.0102 - val_mae: 0.0670
 # loss: 0.0211 - mae: 0.1103 - val_loss: 0.0225 - val_mae: 0.1065  (x, x)
 # loss: 0.0120 - mae: 0.0811 - val_loss: 0.0103 - val_mae: 0.0669  2nd time individual
+
+# epoch 47  loss: 0.0165 - mae: 0.0990 - val_loss: 0.0137 - val_mae: 0.0870  exclude all
+
 # basic shapes  baseline cnn
 # loss: 0.0118 - mae: 0.0773 - val_loss: 0.0110 - val_mae: 0.0692
 
@@ -132,6 +135,10 @@
 # val_loss: 0.5108 - val_dist_mode_loss: 0.4669 - val_cont_output_loss: 0.0439 - val_dist_mode_acc: 0.7986 - val_cont_output_mae: 0.1660
 # loss: 0.4345 - dist_mode_loss: 0.3846 - cont_output_loss: 0.0499 - dist_mode_acc: 0.8297 - cont_output_mae: 0.1794
 # val_loss: 0.4957 - val_dist_mode_loss: 0.4548 - val_cont_output_loss: 0.0409 - val_dist_mode_acc: 0.8047 - val_cont_output_mae: 0.1585  2nd time individual
+
+# epoch 48  loss: 0.3490 - dist_mode_loss: 0.2888 - cont_output_loss: 0.0602 - dist_mode_acc: 0.8726 - cont_output_mae: 0.2003  exclude all
+# val_loss: 0.3027 - val_dist_mode_loss: 0.2563 - val_cont_output_loss: 0.0464 - val_dist_mode_acc: 0.8788 - val_cont_output_mae: 0.1754  exclude all
+
 # basic shapes  baseline cnn
 # loss: 0.4849 - dist_mode_loss: 0.4343 - cont_output_loss: 0.0506 - dist_mode_acc: 0.8115 - cont_output_mae: 0.1806
 # val_loss: 0.5252 - val_dist_mode_loss: 0.4815 - val_cont_output_loss: 0.0437 - val_dist_mode_acc: 0.8005 - val_cont_output_mae: 0.1652
@@ -161,6 +168,15 @@
 # loss: 0.2109 - eq_typl_loss: 0.1669 - cont_output_loss: 0.0440 - eq_typl_acc: 0.9312 - cont_output_mae: 0.1632
 # val_loss: 0.2420 - val_eq_typl_loss: 0.2043 - val_cont_output_loss: 0.0377 - val_eq_typl_acc: 0.9147 - val_cont_output_mae: 0.1475  2nd time individual
 
+# epoch 11  loss: 0.2521 - eq_typl_loss: 0.1870 - cont_output_loss: 0.0651 - eq_typl_acc: 0.9218 - cont_output_mae: 0.2086  exclude all
+# val_loss: 0.2528 - val_eq_typl_loss: 0.1948 - val_cont_output_loss: 0.0579 - val_eq_typl_acc: 0.9159 - val_cont_output_mae: 0.1966  exclude all
+# epoch 16  loss: 0.2167 - eq_typl_loss: 0.1503 - cont_output_loss: 0.0664 - eq_typl_acc: 0.9390 - cont_output_mae: 0.2110
+# val_loss: 0.2301 - val_eq_typl_loss: 0.1704 - val_cont_output_loss: 0.0597 - val_eq_typl_acc: 0.9292 - val_cont_output_mae: 0.2003
+
+# basic shapes  baseline cnn 8x
+# epoch 10  loss: 0.7824 - eq_typl_loss: 0.6957 - cont_output_loss: 0.0867 - eq_typl_acc: 0.5006 - cont_output_mae: 0.2543  exclude all
+# val_loss: 0.7788 - val_eq_typl_loss: 0.6934 - val_cont_output_loss: 0.0853 - val_eq_typl_acc: 0.4946 - val_cont_output_mae: 0.2531  exclude all
+
 # adv shapes  baseline cnn 2x
 # loss: 0.2652 - eq_typl_loss: 0.2210 - cont_output_loss: 0.0442 - eq_typl_acc: 0.9073 - cont_output_mae: 0.1630
 # val_loss: 0.2767 - val_eq_typl_loss: 0.2409 - val_cont_output_loss: 0.0357 - val_eq_typl_acc: 0.8988 - val_cont_output_mae: 0.1411
@@ -175,8 +191,14 @@
 # basic shapes  baseline cnn 2x
 # loss: 0.0096 - mae: 0.0733 - val_loss: 0.0095 - val_mae: 0.0592
 
+# epoch 12  loss: 0.0135 - mae: 0.0867 - val_loss: 0.0098 - val_mae: 0.0657  exclude all
+# epoch 17  loss: 0.0126 - mae: 0.0842 - val_loss: 0.0088 - val_mae: 0.0645
+
 # adv shapes  baseline cnn 2x
 # loss: 0.0088 - mae: 0.0709 - val_loss: 0.0073 - val_mae: 0.0536
+
+# temporal  baseline cnn 2x
+# loss: 0.0084 - mae: 0.0703 - val_loss: 0.0075 - val_mae: 0.0554
 
 
 # phaser
@@ -187,8 +209,14 @@
 # basic shapes  baseline cnn
 # loss: 0.0202 - mae: 0.1037 - val_loss: 0.0195 - val_mae: 0.0963
 
+# epoch 18  loss: 0.0186 - mae: 0.1036 - val_loss: 0.0141 - val_mae: 0.0845  exclude all
+# epoch 24  loss: 0.0178 - mae: 0.1017 - val_loss: 0.0133 - val_mae: 0.0818
+
 # adv shapes  baseline cnn 2x
 # loss: 0.0202 - mae: 0.1060 - val_loss: 0.0183 - val_mae: 0.0915
+
+# temporal  baseline cnn 2x
+# loss: 0.0198 - mae: 0.1063 - val_loss: 0.0197 - val_mae: 0.0972
 
 
 # effect rnn

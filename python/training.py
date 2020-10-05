@@ -13,13 +13,13 @@ from tqdm import tqdm
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, param_to_effect
 from models import build_effect_model, baseline_cnn_2x, baseline_cnn, \
-    exposure_cnn, baseline_lstm
+    exposure_cnn, baseline_lstm, baseline_cnn_shallow
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 1
+GPU = 0
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -428,8 +428,8 @@ def get_x_ids(data_dir: str,
 if __name__ == '__main__':
     # effect = 'chorus'
     # params = {118, 119, 120, 121, 122, 123}
-    # effect = 'compressor'
-    # params = {270, 271, 272}
+    effect = 'compressor'
+    params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
@@ -438,14 +438,15 @@ if __name__ == '__main__':
     # params = {142, 143, 144, 145, 146, 268}
     # effect = 'flanger'
     # params = {105, 106, 107}
-    effect = 'phaser'
-    params = {111, 112, 113, 114}
+    # effect = 'phaser'
+    # params = {111, 112, 113, 114}
     # effect = 'reverb-hall'
     # params = {82, 83, 84, 85, 86, 87}
     # effect = 'distortion_phaser'
 
     # architecture = baseline_cnn
     architecture = baseline_cnn_2x
+    # architecture = baseline_cnn_shallow
     # architecture = exposure_cnn
     # architecture = baseline_lstm
     batch_size = 128
@@ -460,16 +461,19 @@ if __name__ == '__main__':
     use_multiprocessing = True
     workers = 8
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    # model_name = f'basic_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    # model_name = f'basic_shapes_exclude_all__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    model_name = f'basic_shapes_exclude_all_bi__{effect}__{architecture.__name__}__cm_{channel_mode}'
     # model_name = f'adv_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    model_name = f'temporal__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    # model_name = f'temporal__{effect}__{architecture.__name__}__cm_{channel_mode}'
 
     datasets_dir = DATASETS_DIR
     # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
     # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
     # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
+    # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all')
+    data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all__bi')
     # data_dir = os.path.join(datasets_dir, f'adv_shapes__{effect}')
-    data_dir = os.path.join(datasets_dir, f'temporal__{effect}')
+    # data_dir = os.path.join(datasets_dir, f'temporal__{effect}')
     log.info(f'data_dir = {data_dir}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
@@ -499,7 +503,8 @@ if __name__ == '__main__':
                                n_cate=x_y_metadata.n_cate,
                                cate_names=x_y_metadata.cate_names,
                                n_cont=x_y_metadata.n_cont)
-
+    # log.info('Loading previous best model.')
+    # model.load_weights(os.path.join(OUT_DIR, f'{model_name}__best.h5'))
     model.compile(optimizer='adam',
                   loss=x_y_metadata.y_losses,
                   metrics=x_y_metadata.metrics)

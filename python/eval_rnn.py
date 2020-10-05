@@ -158,6 +158,32 @@ def get_patch_from_effect_cnn(effect_name: str,
     return patches
 
 
+def get_next_effect_name(rnn_pred: np.ndarray,
+                         effect_idx_to_name: Dict[int, str],
+                         effects_can_repeat: bool,
+                         effect_name_seq: List[str]) -> str:
+    assert len(rnn_pred.shape) == 1
+
+    if effects_can_repeat:
+        next_effect_idx = np.argmax(rnn_pred)
+        next_effect_name = effect_idx_to_name[next_effect_idx]
+        return next_effect_name
+
+    used_effects = set(effect_name_seq)
+    n_effects = len(effect_idx_to_name)
+    assert len(used_effects) < n_effects
+
+    next_effect_name = None
+    highest_prob = 0.0
+    for idx, prob in enumerate(rnn_pred):
+        effect_name = effect_idx_to_name[idx]
+        if effect_name not in used_effects and prob > highest_prob:
+            next_effect_name = effect_name
+            highest_prob = prob
+
+    return next_effect_name
+
+
 def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
              target_rc_effects: List[Dict[str, Union[str, List[int]]]],
              rc: RenderConfig,
@@ -167,9 +193,14 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
              cnns: Dict[str, Model],
              effect_name_to_idx: Dict[str, int] = EFFECT_TO_IDX_MAPPING,
              effects_can_repeat: bool = False,
-             max_steps: int = 10):
+             max_steps: int = 8):
     rc.use_hashes = False
     log.info(f'Using preset: {rc.preset}')
+
+    effect_idx_to_name = {v: k for k, v in effect_name_to_idx.items()}
+    n_effects = len(effect_name_to_idx)
+    if not effects_can_repeat:
+        max_steps = n_effects
 
     engine = setup_serum(rc.preset, sr=rc.sr, render_once=True)
     set_default_and_constant_params(engine,
@@ -219,9 +250,6 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
 
     mel_seq = [np.stack([target_mel, init_mel], axis=-1)]
 
-    n_effects = len(effect_name_to_idx)
-    effect_idx_to_name = {v: k for k, v in effect_name_to_idx.items()}
-
     init_effect = np.zeros((n_effects + 1,), dtype=np.float32)
     init_effect[-1] = 1.0
 
@@ -229,14 +257,18 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
     effect_seq = [init_effect]
     mses = [init_mse]
     maes = [init_mae]
+    patch_seq = []
 
     for step_idx in range(max_steps):
         rnn_x = (np.expand_dims(np.array(mel_seq, dtype=np.float32), axis=0),
                  np.expand_dims(np.array(effect_seq, dtype=np.float32), axis=0))
         rnn_pred = rnn.predict(rnn_x, batch_size=1)[0]
         log.info(f'rnn_pred = {rnn_pred}')
-        next_effect_idx = np.argmax(rnn_pred)
-        next_effect_name = effect_idx_to_name[next_effect_idx]
+
+        next_effect_name = get_next_effect_name(rnn_pred,
+                                                effect_idx_to_name,
+                                                effects_can_repeat,
+                                                effect_name_seq)
         log.info(f'next_effect_name = {next_effect_name}')
         effect_name_seq.append(next_effect_name)
         next_rc_effects = [{'name': next_effect_name}]
@@ -259,6 +291,8 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
                                             batch_size=1)
         patch = patches[0]
         log.info(f'patch = {patch}')
+        patch_seq.append(patch)
+
         next_audio = render_patch(engine,
                                   patch,
                                   rc,
@@ -280,6 +314,7 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
         maes.append(next_mae)
 
         mel_seq.append(np.stack([next_mel, init_mel], axis=-1))
+        next_effect_idx = effect_name_to_idx[next_effect_name]
         next_effect = np.zeros((n_effects + 1,), dtype=np.float32)
         assert next_effect_idx != n_effects
         next_effect[next_effect_idx] = 1.0
@@ -288,6 +323,7 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
     print(effect_name_seq)
     print(mses)
     print(maes)
+    print(patch_seq)
 
 
 if __name__ == '__main__':
@@ -303,16 +339,17 @@ if __name__ == '__main__':
 
     init_rc_effects = []
     target_rc_effects = [
-        {'name': 'compressor', 'CompMB L': [80], 'CompMB M': [80], 'CompMB H': [80]},
-        # {'name': 'distortion', 'Dist_Drv': [84], 'Dist_Mode': [6]},
-        {'name': 'flanger', 'Flg_Rate': [60]},
+        {'name': 'compressor', 'CompMB L': [60], 'CompMB M': [60], 'CompMB H': [70]},
+        {'name': 'distortion', 'Dist_Drv': [74], 'Dist_Mode': [5]},
+        {'name': 'eq', 'EQ FrqL': [50], 'EQ Q L': [100], 'EQ VolL': [0], 'EQ TypL': [0]},
+        {'name': 'flanger', 'Flg_Rate': [50], 'Flg_Dep': [40], 'Flg_Feed': [60]},
         {'name': 'phaser', 'Phs_Rate': [75]},
     ]
     renders_save_dir = OUT_DIR
 
     rnn_model_name = 'basic_shapes__rnn__baseline_cnn__best.h5'
     rnn = load_model(os.path.join(MODELS_DIR, rnn_model_name))
-    cnns = load_effect_cnns(MODELS_DIR, 'basic_shapes')
+    cnns = load_effect_cnns(MODELS_DIR, 'basic_shapes_exclude_all')
 
     ensemble(init_rc_effects,
              target_rc_effects,
@@ -321,6 +358,7 @@ if __name__ == '__main__':
              renders_save_dir,
              rnn,
              cnns,
+             effects_can_repeat=False,
              max_steps=8)
     exit()
 

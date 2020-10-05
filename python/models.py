@@ -119,6 +119,36 @@ def baseline_cnn_2x(in_x: int,
     return input_img, fc
 
 
+def baseline_cnn_shallow(in_x: int,
+                         in_y: int,
+                         n_channels: int = 2,
+                         fc_dim: int = 128,
+                         dropout: float = 0.5) -> (Tensor, Tensor):
+    log.info(f'Using fc_dim of {fc_dim}')
+    log.info(f'Using dropout of {dropout}')
+
+    input_img = Input(shape=(in_x, in_y, n_channels))
+    x = Conv2D(256,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(input_img)
+    x = MaxPooling2D((4, 4))(x)
+    x = Conv2D(128,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((4, 4))(x)
+    x = Flatten()(x)
+    x = Dense(2 * fc_dim, activation='elu')(x)
+    x = Dropout(dropout)(x)
+    x = Dense(fc_dim, activation='elu')(x)
+    fc = Dropout(dropout)(x)
+
+    return input_img, fc
+
+
 def baseline_lstm(in_x: int,
                  in_y: int,
                  fc_dim: int = 128,
@@ -214,6 +244,13 @@ def build_effect_model(in_x: int,
 
 
 if __name__ == '__main__':
+    # input_img, outputs = baseline_cnn(128, 88, 2)
+    # input_img, outputs = baseline_cnn_2x(128, 88, 2)
+    input_img, outputs = baseline_cnn_shallow(128, 88, 2)
+    cnn = Model(input_img, outputs)
+    cnn.summary()
+    exit()
+
     model = baseline_effect_rnn()
     model.summary()
     import numpy as np

@@ -17,7 +17,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 1
+GPU = 0
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -219,14 +219,14 @@ if __name__ == '__main__':
     workers = 8
     # model_name = f'testing__rnn'
     # model_name = f'basic_shapes__rnn__{cnn_architecture.__name__}'
-    model_name = f'adv_shapes__rnn__{cnn_architecture.__name__}'
-    # model_name = f'temporal__rnn__{cnn_architecture.__name__}'
+    # model_name = f'adv_shapes__rnn__{cnn_architecture.__name__}'
+    model_name = f'temporal__rnn__{cnn_architecture.__name__}'
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'testing__rnn')
     # data_dir = os.path.join(datasets_dir, f'basic_shapes__rnn')
-    data_dir = os.path.join(datasets_dir, f'adv_shapes__rnn')
-    # data_dir = os.path.join(datasets_dir, f'temporal__rnn')
+    # data_dir = os.path.join(datasets_dir, f'adv_shapes__rnn')
+    data_dir = os.path.join(datasets_dir, f'temporal__rnn')
 
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
                                                    val_split=val_split,
