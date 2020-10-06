@@ -1,5 +1,7 @@
+import copy
 import logging
 import os
+import random
 from typing import List, Dict, Callable, Union
 
 import librenderman as rm
@@ -23,12 +25,19 @@ log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 
+# EFFECT_TO_Y_PARAMS = {
+#     'compressor': {270, 271, 272},
+#     'distortion': {97, 99},
+#     'eq': {88, 90, 92, 94},
+#     'flanger': {105, 106, 107},
+#     'phaser': {111, 112, 113, 114},
+# }
 EFFECT_TO_Y_PARAMS = {
     'compressor': {270, 271, 272},
     'distortion': {97, 99},
-    'eq': {88, 90, 92, 94},
-    'flanger': {105, 106, 107},
-    'phaser': {111, 112, 113, 114},
+    'eq': {89, 91, 93},
+    'phaser': {112, 113, 114},
+    'reverb-hall': {81, 84, 86},
 }
 
 
@@ -41,6 +50,7 @@ def load_effect_cnns(models_dir: str,
     for effect_name in EFFECT_TO_IDX_MAPPING:
         model_name = f'{model_prefix}__{effect_name}__{architecture.__name__}' \
                      f'__cm_{channel_mode}__best.h5'
+        # model_name = 'random_baseline_cnn_2x.h5'
         model_path = os.path.join(models_dir, model_name)
         log.info(f'Loading {model_name}')
         effect_cnn = load_model(model_path)
@@ -320,17 +330,66 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
         next_effect[next_effect_idx] = 1.0
         effect_seq.append(next_effect)
 
-    print(effect_name_seq)
-    print(mses)
-    print(maes)
-    print(patch_seq)
+    log.info('')
+    log.info('')
+    log.info('Results:')
+    log.info('')
+    log.info(f'target effects  = {target_effect_names}')
+    log.info(f'effect_name_seq = {effect_name_seq}')
+    log.info(f'mses = {" -> ".join(f"{mse:.3f}" for mse in mses)}')
+    log.info(f'maes = {" -> ".join(f"{mae:.3f}" for mae in maes)}')
+    log.info('')
+    log.info('target effect values')
+
+    for e in target_rc_effects:
+        log.info(f'{sorted(e.items())}')
+        for desc in sorted(e):
+            if desc == 'name':
+                continue
+            param = DESC_TO_PARAM[desc]
+            target_v = target_engine.get_parameter(param)
+            actual_v = engine.get_parameter(param)
+            log.info(f'{desc.ljust(12)} = actual {actual_v:.4f} | '
+                     f'{target_v:.4f} target')
+
+
+def get_random_rc_effects(
+        rc_effects: List[Dict[str, Union[str, List[int]]]],
+        min_n_effects: int = 1,
+        max_n_effects: int = -1,
+) -> List[Dict[str, Union[str, List[int]]]]:
+    n_effects = len(rc_effects)
+    assert n_effects > 0
+    if max_n_effects == -1:
+        max_n_effects = n_effects
+
+    rand_rc_effects = copy.deepcopy(rc_effects)
+    n_effects_to_use = np.random.randint(min_n_effects, max_n_effects + 1)
+    rand_rc_effects = random.sample(rand_rc_effects,
+                                    n_effects_to_use)
+    for e in rand_rc_effects:
+        for desc, params in e.items():
+            if desc == 'name':
+                continue
+            assert len(params) > 0
+            e[desc] = [random.choice(params)]
+
+    return rand_rc_effects
 
 
 if __name__ == '__main__':
-    render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml')
+    render_config_path = os.path.join(CONFIGS_DIR,
+                                      'rendering/seq_5_v3_train.yaml')
     with open(render_config_path, 'r') as config_f:
         render_config = yaml.full_load(config_f)
     rc = RenderConfig(**render_config)
+
+    test_rc_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_v3_test.yaml')
+    with open(test_rc_path, 'r') as config_f:
+        render_config = yaml.full_load(config_f)
+    test_rc = RenderConfig(**render_config)
+    test_rc_effects = test_rc.effects
+    rand_rc_effects = get_random_rc_effects(test_rc_effects, 2, 4)
 
     process_config_path = os.path.join(CONFIGS_DIR, 'audio_process_test.yaml')
     with open(process_config_path, 'r') as config_f:
@@ -338,18 +397,20 @@ if __name__ == '__main__':
     pc = ProcessConfig(**process_config)
 
     init_rc_effects = []
-    target_rc_effects = [
-        {'name': 'compressor', 'CompMB L': [60], 'CompMB M': [60], 'CompMB H': [70]},
-        {'name': 'distortion', 'Dist_Drv': [74], 'Dist_Mode': [5]},
-        {'name': 'eq', 'EQ FrqL': [50], 'EQ Q L': [100], 'EQ VolL': [0], 'EQ TypL': [0]},
-        {'name': 'flanger', 'Flg_Rate': [50], 'Flg_Dep': [40], 'Flg_Feed': [60]},
-        {'name': 'phaser', 'Phs_Rate': [75]},
-    ]
+    # target_rc_effects = [
+    #     {'name': 'compressor', 'CompMB L': [60], 'CompMB M': [60], 'CompMB H': [70]},
+    #     {'name': 'distortion', 'Dist_Drv': [74], 'Dist_Mode': [5]},
+    #     {'name': 'eq', 'EQ FrqL': [50], 'EQ Q L': [100], 'EQ VolL': [0], 'EQ TypL': [0]},
+    #     {'name': 'flanger', 'Flg_Rate': [50], 'Flg_Dep': [40], 'Flg_Feed': [60]},
+    #     {'name': 'phaser', 'Phs_Rate': [75]},
+    # ]
+    target_rc_effects = rand_rc_effects
     renders_save_dir = OUT_DIR
 
-    rnn_model_name = 'basic_shapes__rnn__baseline_cnn__best.h5'
+    rnn_model_name = 'seq_5_v3__basic_shapes__rnn__baseline_cnn__best.h5'
+    # rnn_model_name = 'random_baseline_effect_rnn.h5'
     rnn = load_model(os.path.join(MODELS_DIR, rnn_model_name))
-    cnns = load_effect_cnns(MODELS_DIR, 'basic_shapes_exclude_all')
+    cnns = load_effect_cnns(MODELS_DIR, 'seq_5_v3__basic_shapes')
 
     ensemble(init_rc_effects,
              target_rc_effects,
@@ -374,11 +435,12 @@ if __name__ == '__main__':
     # use_multiprocessing = False
     use_multiprocessing = True
     workers = 8
-    model_name = f'basic_shapes__rnn__{cnn_architecture.__name__}__best.h5'
+    model_name = f'seq_5_v3__basic_shapes__rnn__{cnn_architecture.__name__}' \
+                 f'__best.h5'
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'testing__rnn')
-    data_dir = os.path.join(datasets_dir, f'basic_shapes__rnn')
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__basic_shapes__rnn')
 
     _, _, test_x_ids = get_x_ids(data_dir)
     log.info(f'test_x_ids length = {len(test_x_ids)}')
@@ -390,17 +452,8 @@ if __name__ == '__main__':
                                 effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
                                 batch_size=batch_size)
 
-    model = baseline_effect_rnn(in_x,
-                                in_y,
-                                n_channels,
-                                n_effects,
-                                cnn_architecture=cnn_architecture)
-    # model.load_weights(os.path.join(MODELS_DIR, model_name))
-    model.load_weights(os.path.join(OUT_DIR, model_name))
-
-    model.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
-                  metrics='acc')
+    model = load_model(os.path.join(MODELS_DIR, model_name))
+    # model = load_model(os.path.join(OUT_DIR, model_name))
     model.summary()
 
     eval_results = model.evaluate(test_gen,

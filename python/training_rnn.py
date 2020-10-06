@@ -25,12 +25,19 @@ if physical_devices:
     # tf.config.experimental.set_memory_growth(physical_devices[GPU], enable=True)
 
 
+# EFFECT_TO_IDX_MAPPING = {
+#     'compressor': 0,
+#     'distortion': 1,
+#     'eq': 2,
+#     'flanger': 3,
+#     'phaser': 4,
+# }
 EFFECT_TO_IDX_MAPPING = {
     'compressor': 0,
     'distortion': 1,
     'eq': 2,
-    'flanger': 3,
-    'phaser': 4,
+    'phaser': 3,
+    'reverb-hall': 4
 }
 
 
@@ -212,21 +219,23 @@ if __name__ == '__main__':
     test_split = 0.05
     patience = 10
     used_cached_x_ids = True
-    # max_n = 56000
     max_n = -1
     # use_multiprocessing = False
     use_multiprocessing = True
     workers = 8
+    load_prev_model = False
+
+    presets_cat = 'basic_shapes'
+    # presets_cat = 'adv_shapes'
+    # presets_cat = 'temporal'
+
     # model_name = f'testing__rnn'
-    # model_name = f'basic_shapes__rnn__{cnn_architecture.__name__}'
-    # model_name = f'adv_shapes__rnn__{cnn_architecture.__name__}'
-    model_name = f'temporal__rnn__{cnn_architecture.__name__}'
+    model_name = f'seq_5_v3__{presets_cat}__rnn__{cnn_architecture.__name__}'
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'testing__rnn')
-    # data_dir = os.path.join(datasets_dir, f'basic_shapes__rnn')
-    # data_dir = os.path.join(datasets_dir, f'adv_shapes__rnn')
-    data_dir = os.path.join(datasets_dir, f'temporal__rnn')
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__rnn')
+    log.info(f'data_dir = {data_dir}')
 
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
                                                    val_split=val_split,
@@ -255,6 +264,10 @@ if __name__ == '__main__':
                                 n_channels,
                                 n_effects,
                                 cnn_architecture=cnn_architecture)
+
+    if load_prev_model:
+        log.info('Loading previous best model.')
+        model.load_weights(os.path.join(OUT_DIR, f'{model_name}__best.h5'))
 
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',

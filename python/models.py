@@ -9,6 +9,8 @@ from tensorflow.keras.layers import Input, Dense, Flatten, MaxPooling2D, \
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.python.framework.ops import Tensor
 
+from config import MODELS_DIR
+
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
@@ -182,7 +184,7 @@ def baseline_effect_rnn(in_x: int = 128,
                         lstm_dim: int = 128,
                         fc_dim: int = 128,
                         dropout: float = 0.5,
-                        cnn_architecture: Callable = baseline_cnn_2x,
+                        cnn_architecture: Callable = baseline_cnn,
                         cnn_fc_dim: int = 128,
                         cnn_dropout: float = 0.5):
     cnn_input_img, cnn_fc = cnn_architecture(in_x,
@@ -212,7 +214,7 @@ def baseline_effect_rnn(in_x: int = 128,
 
 def build_effect_model(in_x: int,
                        in_y: int,
-                       architecture: Callable = baseline_cnn,
+                       architecture: Callable = baseline_cnn_2x,
                        n_bin: int = 0,
                        n_cate: List[int] = None,
                        cate_names: List[str] = None,
@@ -246,13 +248,16 @@ def build_effect_model(in_x: int,
 if __name__ == '__main__':
     # input_img, outputs = baseline_cnn(128, 88, 2)
     # input_img, outputs = baseline_cnn_2x(128, 88, 2)
-    input_img, outputs = baseline_cnn_shallow(128, 88, 2)
-    cnn = Model(input_img, outputs)
-    cnn.summary()
-    exit()
+    # # input_img, outputs = baseline_cnn_shallow(128, 88, 2)
+    # cnn = Model(input_img, outputs)
+    # cnn.summary()
+    # cnn.save(os.path.join(MODELS_DIR, 'random_baseline_cnn_2x.h5'))
+    # exit()
 
     model = baseline_effect_rnn()
     model.summary()
+    model.save(os.path.join(MODELS_DIR, 'random_baseline_effect_rnn.h5'))
+    exit()
     import numpy as np
 
     test_target_img = np.ones((3, 128, 88, 1))

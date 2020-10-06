@@ -207,34 +207,28 @@ def generate_y_individual(data_dir: str,
 
 
 if __name__ == '__main__':
-    # n = 56
-    # n = 1000
-    # n = 25000
-    # gran = 1000
     gran = 100
-    # effect = 'chorus'
-    # params = {118, 119, 120, 121, 122, 123}
+
     effect = 'compressor'
     params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
-    # params = {88, 90, 92, 94}
-    # effect = 'filter'
-    # params = {142, 143, 144, 145, 146, 268}
-    # effect = 'flanger'
-    # params = {105, 106, 107}
+    # params = {89, 91, 93}
     # effect = 'phaser'
-    # params = {111, 112, 113, 114}
+    # params = {112, 113, 114}
     # effect = 'reverb-hall'
-    # params = {82, 83, 84, 85, 86, 87}
+    # params = {81, 84, 86}
     # effect = 'distortion_phaser'
 
+    presets_cat = 'basic_shapes'
+    # presets_cat = 'adv_shapes'
+    # presets_cat = 'temporal'
+
     datasets_dir = DATASETS_DIR
-    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
+
     generate_y_individual(
-        # os.path.join(datasets_dir, f'basic_shapes__{effect}'), params)
-        # os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all'), params)
-        os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all__bi'), params)
-        # os.path.join(datasets_dir, f'adv_shapes__{effect}'), params)
-        # os.path.join(datasets_dir, f'temporal__{effect}'), params)
+        # os.path.join(datasets_dir, f'testing__{effect}'), params)
+        os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}'),
+        params
+    )

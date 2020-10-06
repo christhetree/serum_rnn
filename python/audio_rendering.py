@@ -319,7 +319,7 @@ def _create_save_dir(rc: RenderConfig,
 
 def render_audio(rc: RenderConfig,
                  max_duplicates_in_a_row: int = MAX_DUPLICATES) -> None:
-    pg = PatchGenerator(rc)
+    pg = PatchGenerator(rc.gran, rc.effects)
     assert rc.effect_names() == pg.effect_names
     save_dir = _create_save_dir(rc, create_dirs=True)
 
@@ -485,7 +485,7 @@ def render_base_audio(orig_rc: RenderConfig,
                 rc_effect[desc] = [param_v]
 
         rc.effects = list(rc_effects.values())
-        pg = PatchGenerator(rc)
+        pg = PatchGenerator(rc.gran, rc.effects)
         assert pg.n_combos == 1
         assert rc.effect_names() == pg.effect_names
 
@@ -515,15 +515,14 @@ def render_base_audio(orig_rc: RenderConfig,
 
 
 if __name__ == '__main__':
-    # render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml')
+    # render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_v3_train.yaml')
     # with open(render_config_path, 'r') as config_f:
     #     render_config = yaml.full_load(config_f)
-    #
     # rc = RenderConfig(**render_config)
     # render_audio(rc)
     # exit()
 
-    all_effects = ['flanger', 'phaser', 'compressor', 'eq', 'distortion']
+    all_effects = ['compressor', 'distortion', 'eq', 'phaser', 'reverb-hall']
     all_combos = []
     for n_effects in range(len(all_effects) + 1):
         for combo in combinations(all_effects, n_effects):
@@ -534,7 +533,7 @@ if __name__ == '__main__':
     log.info(f'All exclude combos = {all_combos}')
     log.info(f'Len of exclude combos = {len(all_combos)}')
 
-    render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_train.yaml')
+    render_config_path = os.path.join(CONFIGS_DIR, 'rendering/seq_5_v3_train.yaml')
     with open(render_config_path, 'r') as config_f:
         render_config = yaml.full_load(config_f)
 

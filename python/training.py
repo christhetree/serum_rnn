@@ -13,13 +13,14 @@ from tqdm import tqdm
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, param_to_effect
 from models import build_effect_model, baseline_cnn_2x, baseline_cnn, \
-    exposure_cnn, baseline_lstm, baseline_cnn_shallow
+    exposure_cnn, baseline_lstm, baseline_cnn_shallow, baseline_cnn_2x_bi, \
+    build_effect_model_bi
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 0
+GPU = 1
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -83,11 +84,12 @@ class DataGenerator(Sequence):
         return x, y
 
     def _create_x_batch(self,
-                        batch_x_ids: List[Tuple[str, str, str]]) -> np.ndarray:
+                        batch_x_ids: List[Tuple[str, str, str]]) -> (np.ndarray, np.ndarray):
         x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
                      dtype=np.float32)
+        bi = np.empty((self.batch_size, 5), dtype=np.float32)
 
-        for idx, (_, mel_path, base_mel_path) in enumerate(batch_x_ids):
+        for idx, (_, mel_path, base_mel_path, base_effects) in enumerate(batch_x_ids):
             if self.channel_mode == 1:
                 mel = np.load(mel_path)['mel']
                 base_mel = np.load(base_mel_path)['mel']
@@ -102,7 +104,9 @@ class DataGenerator(Sequence):
                 x[idx, :, :, 0] = base_mel
                 x[idx, :, :, 1] = base_mel
 
-        return x
+            bi[idx, :] = base_effects
+
+        return [x, bi]
 
     def _create_y_batch(
             self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:
@@ -118,7 +122,7 @@ class DataGenerator(Sequence):
         if self.n_cont:
             y_cont = np.empty((self.batch_size, self.n_cont), dtype=np.float32)
 
-        for idx, (x_id, _, _) in enumerate(batch_x_ids):
+        for idx, (x_id, _, _, _) in enumerate(batch_x_ids):
             y_id = f'{x_id}__y_{self.y_params_str}.npz'
             y_data = np.load(os.path.join(self.y_dir, y_id))
             if self.n_bin:
@@ -376,9 +380,9 @@ def get_x_ids(data_dir: str,
               val_split: float = 0.10,
               test_split: float = 0.05,
               max_n: int = -1,
-              use_cached: bool = True) -> (List[Tuple[str, str, str]],
-                                           List[Tuple[str, str, str]],
-                                           List[Tuple[str, str, str]]):
+              use_cached: bool = True) -> (List[Tuple[str, str, str, np.ndarray]],
+                                           List[Tuple[str, str, str, np.ndarray]],
+                                           List[Tuple[str, str, str, np.ndarray]]):
     assert val_split + test_split < 1.0
     train_x_ids_path = os.path.join(data_dir, 'train_x_ids.npy')
     val_x_ids_path = os.path.join(data_dir, 'val_x_ids.npy')
@@ -388,9 +392,9 @@ def get_x_ids(data_dir: str,
         and all(os.path.exists(p)
                 for p in [train_x_ids_path, val_x_ids_path, test_x_ids_path]):
         log.info('Using cached x_ids.')
-        train_x_ids = np.load(train_x_ids_path)
-        val_x_ids = np.load(val_x_ids_path)
-        test_x_ids = np.load(test_x_ids_path)
+        train_x_ids = np.load(train_x_ids_path, allow_pickle=True)
+        val_x_ids = np.load(val_x_ids_path, allow_pickle=True)
+        test_x_ids = np.load(test_x_ids_path, allow_pickle=True)
     else:
         log.info('Creating new x_ids.')
         x_dir = os.path.join(data_dir, 'x')
@@ -402,7 +406,8 @@ def get_x_ids(data_dir: str,
             npz_data = np.load(os.path.join(x_dir, npz_name))
             mel_path = npz_data['mel_path'].item()
             base_mel_path = npz_data['base_mel_path'].item()
-            x_ids.append((npz_name, mel_path, base_mel_path))
+            base_effects = npz_data['base_effects']
+            x_ids.append((npz_name, mel_path, base_mel_path, base_effects))
 
         log.info(f'Found {len(x_ids)} data points.')
 
@@ -426,22 +431,16 @@ def get_x_ids(data_dir: str,
 
 
 if __name__ == '__main__':
-    # effect = 'chorus'
-    # params = {118, 119, 120, 121, 122, 123}
     effect = 'compressor'
     params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
-    # params = {88, 90, 92, 94}
-    # effect = 'filter'
-    # params = {142, 143, 144, 145, 146, 268}
-    # effect = 'flanger'
-    # params = {105, 106, 107}
+    # params = {89, 91, 93}
     # effect = 'phaser'
-    # params = {111, 112, 113, 114}
+    # params = {112, 113, 114}
     # effect = 'reverb-hall'
-    # params = {82, 83, 84, 85, 86, 87}
+    # params = {81, 84, 86}
     # effect = 'distortion_phaser'
 
     # architecture = baseline_cnn
@@ -449,31 +448,30 @@ if __name__ == '__main__':
     # architecture = baseline_cnn_shallow
     # architecture = exposure_cnn
     # architecture = baseline_lstm
+
     batch_size = 128
     epochs = 100
     val_split = 0.10
     test_split = 0.05
     patience = 10
     used_cached_x_ids = True
-    # max_n = 56000
     max_n = -1
     channel_mode = 1
     use_multiprocessing = True
     workers = 8
+    load_prev_model = False
+
+    presets_cat = 'basic_shapes'
+    # presets_cat = 'adv_shapes'
+    # presets_cat = 'temporal'
+
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    # model_name = f'basic_shapes_exclude_all__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    model_name = f'basic_shapes_exclude_all_bi__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    # model_name = f'adv_shapes__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    # model_name = f'temporal__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    model_name = f'seq_5_v3__{presets_cat}__{effect}__{architecture.__name__}' \
+                 f'__cm_{channel_mode}'
 
     datasets_dir = DATASETS_DIR
-    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
     # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
-    # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}')
-    # data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all')
-    data_dir = os.path.join(datasets_dir, f'basic_shapes__{effect}__exclude_all__bi')
-    # data_dir = os.path.join(datasets_dir, f'adv_shapes__{effect}')
-    # data_dir = os.path.join(datasets_dir, f'temporal__{effect}')
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}')
     log.info(f'data_dir = {data_dir}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
@@ -496,15 +494,18 @@ if __name__ == '__main__':
                             batch_size=batch_size,
                             channel_mode=channel_mode)
 
-    model = build_effect_model(x_y_metadata.in_x,
-                               x_y_metadata.in_y,
-                               architecture=architecture,
-                               n_bin=x_y_metadata.n_bin,
-                               n_cate=x_y_metadata.n_cate,
-                               cate_names=x_y_metadata.cate_names,
-                               n_cont=x_y_metadata.n_cont)
-    # log.info('Loading previous best model.')
-    # model.load_weights(os.path.join(OUT_DIR, f'{model_name}__best.h5'))
+    model = build_effect_model_bi(x_y_metadata.in_x,
+                                  x_y_metadata.in_y,
+                                  architecture=architecture,
+                                  n_bin=x_y_metadata.n_bin,
+                                  n_cate=x_y_metadata.n_cate,
+                                  cate_names=x_y_metadata.cate_names,
+                                  n_cont=x_y_metadata.n_cont)
+
+    if load_prev_model:
+        log.info('Loading previous best model.')
+        model.load_weights(os.path.join(OUT_DIR, f'{model_name}__best.h5'))
+
     model.compile(optimizer='adam',
                   loss=x_y_metadata.y_losses,
                   metrics=x_y_metadata.metrics)

@@ -173,27 +173,27 @@ if __name__ == '__main__':
         process_config = yaml.full_load(config_f)
     pc = ProcessConfig(**process_config)
 
-    all_effects = {'flanger', 'phaser', 'compressor', 'eq', 'distortion'}
+    all_effects = {'compressor', 'distortion', 'eq', 'phaser', 'reverb-hall'}
+
     # presets = ['ld_postmodern_talking_[fp]']
-    # presets = ['sine', 'triangle', 'saw', 'square']
+    presets_cat = 'basic_shapes'
+    presets = ['sine', 'triangle', 'saw', 'square']
+    # presets_cat = 'adv_shapes'
     # presets = ['ld_power_5ths_[fp]', 'sy_mtron_saw_[sd]', 'sy_shot_dirt_stab_[im]', 'sy_vintage_bells_[fp]']
-    presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
+    # presets_cat = 'temporal'
+    # presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
 
-
-    # renders_dir = os.path.join(DATA_DIR)
-    # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
+    # renders_dir = DATA_DIR
     renders_dir = '/home/testacc/samsung_t5_local/reverse_synthesis'
 
     datasets_dir = DATASETS_DIR
-    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
 
     # renders_dir = os.path.join(renders_dir, 'training_eq_l_local')
-    renders_dir = os.path.join(renders_dir, 'training_eq_l')
+    renders_dir = os.path.join(renders_dir, 'training_seq_5_v3')
 
     # save_name = f'testing__rnn'
-    # save_name = f'basic_shapes__rnn'
-    # save_name = f'adv_shapes__rnn'
-    save_name = f'temporal__rnn'
+    save_name = f'seq_5_v3__{presets_cat}__rnn'
+
     save_dir = os.path.join(datasets_dir, save_name)
 
     preset_dirs = []

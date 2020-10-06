@@ -169,7 +169,7 @@ def combine_mels_individual(mels_dir: str,
                             save_dir: str,
                             exclude_effects: Set[str] = None,
                             exclude_all: bool = True,
-                            include_base_effects: bool = True) -> None:
+                            include_base_effects: bool = False) -> None:
     _, mels_dir_name = os.path.split(mels_dir)
 
     existing_npz = set()
@@ -320,42 +320,40 @@ if __name__ == '__main__':
     with open(process_config_path, 'r') as config_f:
         process_config = yaml.full_load(config_f)
     pc = ProcessConfig(**process_config)
-    all_effects = {'flanger', 'phaser', 'compressor', 'eq', 'distortion'}
+    all_effects = {'compressor', 'distortion', 'eq', 'phaser', 'reverb-hall'}
 
-    # process_audio_all_combos(pc, all_effects)
-    # exit()
+    process_audio_all_combos(pc, all_effects)
+    exit()
 
     effect = 'compressor'
     # effect = 'distortion'
     # effect = 'eq'
-    # effect = 'flanger'
     # effect = 'phaser'
+    # effect = 'reverb-hall'
+
     exclude_effects = {effect}
+
     # presets = ['ld_postmodern_talking_[fp]']
+    presets_cat = 'basic_shapes'
     presets = ['sine', 'triangle', 'saw', 'square']
+    # presets_cat = 'adv_shapes'
     # presets = ['ld_power_5ths_[fp]', 'sy_mtron_saw_[sd]', 'sy_shot_dirt_stab_[im]', 'sy_vintage_bells_[fp]']
+    # presets_cat = 'temporal'
     # presets = ['ld_iheardulike5ths_[sd]', 'ld_postmodern_talking_[fp]', 'sq_busy_lines_[lcv]', 'sy_runtheharm_[gs]']
 
     # renders_dir = DATA_DIR
-    # renders_dir = '/Volumes/samsung_t5/reverse_synthesis'
     renders_dir = '/home/testacc/samsung_t5_local/reverse_synthesis'
 
     datasets_dir = DATASETS_DIR
-    # datasets_dir = '/mnt/ssd01/christhetree/reverse_synthesis/data/datasets'
 
     # renders_dir = os.path.join(renders_dir, 'training_eq_l_local')
-    renders_dir = os.path.join(renders_dir, 'training_eq_l')
+    renders_dir = os.path.join(renders_dir, 'training_seq_5_v3')
 
     # save_name = f'testing__{effect}'
-    # save_name = f'testing__{effect}__exclude_all'
-    # save_name = f'basic_shapes__{effect}'
-    # save_name = f'basic_shapes__{effect}__exclude_all'
-    save_name = f'basic_shapes__{effect}__exclude_all__bi'
-    # save_name = f'adv_shapes__{effect}'
-    # save_name = f'temporal__{effect}'
-    base_effects = all_effects - exclude_effects
+    save_name = f'seq_5_v3__basic_shapes__{effect}'
 
     save_dir = os.path.join(datasets_dir, save_name)
+    base_effects = all_effects - exclude_effects
 
     preset_dirs = []
     for preset in presets:
