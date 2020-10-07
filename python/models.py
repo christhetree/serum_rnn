@@ -236,6 +236,7 @@ def build_effect_model(in_x: int,
         cate_output = Dense(n_classes, activation='softmax', name=name)(fc)
         outputs.append(cate_output)
 
+    # TODO
     if n_cont:
         cont_output = Dense(n_cont, activation='linear', name='cont_output')(fc)
         outputs.append(cont_output)
@@ -247,12 +248,12 @@ def build_effect_model(in_x: int,
 
 if __name__ == '__main__':
     # input_img, outputs = baseline_cnn(128, 88, 2)
-    # input_img, outputs = baseline_cnn_2x(128, 88, 2)
+    input_img, outputs = baseline_cnn_2x(128, 88, 2)
     # # input_img, outputs = baseline_cnn_shallow(128, 88, 2)
-    # cnn = Model(input_img, outputs)
-    # cnn.summary()
+    cnn = Model(input_img, outputs)
+    cnn.summary()
     # cnn.save(os.path.join(MODELS_DIR, 'random_baseline_cnn_2x.h5'))
-    # exit()
+    exit()
 
     model = baseline_effect_rnn()
     model.summary()

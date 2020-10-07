@@ -13,8 +13,7 @@ from tqdm import tqdm
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, param_to_effect
 from models import build_effect_model, baseline_cnn_2x, baseline_cnn, \
-    exposure_cnn, baseline_lstm, baseline_cnn_shallow, baseline_cnn_2x_bi, \
-    build_effect_model_bi
+    exposure_cnn, baseline_lstm, baseline_cnn_shallow
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -84,12 +83,11 @@ class DataGenerator(Sequence):
         return x, y
 
     def _create_x_batch(self,
-                        batch_x_ids: List[Tuple[str, str, str]]) -> (np.ndarray, np.ndarray):
+                        batch_x_ids: List[Tuple[str, str, str]]) -> np.ndarray:
         x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
                      dtype=np.float32)
-        bi = np.empty((self.batch_size, 5), dtype=np.float32)
 
-        for idx, (_, mel_path, base_mel_path, base_effects) in enumerate(batch_x_ids):
+        for idx, (_, mel_path, base_mel_path) in enumerate(batch_x_ids):
             if self.channel_mode == 1:
                 mel = np.load(mel_path)['mel']
                 base_mel = np.load(base_mel_path)['mel']
@@ -104,9 +102,7 @@ class DataGenerator(Sequence):
                 x[idx, :, :, 0] = base_mel
                 x[idx, :, :, 1] = base_mel
 
-            bi[idx, :] = base_effects
-
-        return [x, bi]
+        return x
 
     def _create_y_batch(
             self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:
@@ -122,7 +118,7 @@ class DataGenerator(Sequence):
         if self.n_cont:
             y_cont = np.empty((self.batch_size, self.n_cont), dtype=np.float32)
 
-        for idx, (x_id, _, _, _) in enumerate(batch_x_ids):
+        for idx, (x_id, _, _) in enumerate(batch_x_ids):
             y_id = f'{x_id}__y_{self.y_params_str}.npz'
             y_data = np.load(os.path.join(self.y_dir, y_id))
             if self.n_bin:
@@ -156,7 +152,7 @@ def train_model(
         batch_size: int = 512,
         epochs: int = 128,
         val_split: float = 0.20,
-        patience: int = 16,
+        patience: int = 8,
         output_dir_path: str = OUT_DIR) -> None:
     save_path = os.path.join(
         output_dir_path,
@@ -186,7 +182,7 @@ def train_model_gen(model: Model,
                     val_gen: DataGenerator,
                     model_name: str,
                     epochs: int = 100,
-                    patience: int = 10,
+                    patience: int = 8,
                     output_dir_path: str = OUT_DIR,
                     use_multiprocessing: bool = True,
                     workers: int = 8) -> None:
@@ -380,9 +376,9 @@ def get_x_ids(data_dir: str,
               val_split: float = 0.10,
               test_split: float = 0.05,
               max_n: int = -1,
-              use_cached: bool = True) -> (List[Tuple[str, str, str, np.ndarray]],
-                                           List[Tuple[str, str, str, np.ndarray]],
-                                           List[Tuple[str, str, str, np.ndarray]]):
+              use_cached: bool = True) -> (List[Tuple[str, str, str]],
+                                           List[Tuple[str, str, str]],
+                                           List[Tuple[str, str, str]]):
     assert val_split + test_split < 1.0
     train_x_ids_path = os.path.join(data_dir, 'train_x_ids.npy')
     val_x_ids_path = os.path.join(data_dir, 'val_x_ids.npy')
@@ -392,9 +388,9 @@ def get_x_ids(data_dir: str,
         and all(os.path.exists(p)
                 for p in [train_x_ids_path, val_x_ids_path, test_x_ids_path]):
         log.info('Using cached x_ids.')
-        train_x_ids = np.load(train_x_ids_path, allow_pickle=True)
-        val_x_ids = np.load(val_x_ids_path, allow_pickle=True)
-        test_x_ids = np.load(test_x_ids_path, allow_pickle=True)
+        train_x_ids = np.load(train_x_ids_path)
+        val_x_ids = np.load(val_x_ids_path)
+        test_x_ids = np.load(test_x_ids_path)
     else:
         log.info('Creating new x_ids.')
         x_dir = os.path.join(data_dir, 'x')
@@ -406,8 +402,7 @@ def get_x_ids(data_dir: str,
             npz_data = np.load(os.path.join(x_dir, npz_name))
             mel_path = npz_data['mel_path'].item()
             base_mel_path = npz_data['base_mel_path'].item()
-            base_effects = npz_data['base_effects']
-            x_ids.append((npz_name, mel_path, base_mel_path, base_effects))
+            x_ids.append((npz_name, mel_path, base_mel_path))
 
         log.info(f'Found {len(x_ids)} data points.')
 
@@ -431,17 +426,16 @@ def get_x_ids(data_dir: str,
 
 
 if __name__ == '__main__':
-    effect = 'compressor'
-    params = {270, 271, 272}
+    # effect = 'compressor'
+    # params = {270, 271, 272}
     # effect = 'distortion'
     # params = {97, 99}
     # effect = 'eq'
     # params = {89, 91, 93}
-    # effect = 'phaser'
-    # params = {112, 113, 114}
+    effect = 'phaser'
+    params = {112, 113, 114}
     # effect = 'reverb-hall'
     # params = {81, 84, 86}
-    # effect = 'distortion_phaser'
 
     # architecture = baseline_cnn
     architecture = baseline_cnn_2x
@@ -453,16 +447,17 @@ if __name__ == '__main__':
     epochs = 100
     val_split = 0.10
     test_split = 0.05
-    patience = 10
+    patience = 8
     used_cached_x_ids = True
     max_n = -1
     channel_mode = 1
     use_multiprocessing = True
     workers = 8
     load_prev_model = False
+    # load_prev_model = True
 
-    presets_cat = 'basic_shapes'
-    # presets_cat = 'adv_shapes'
+    # presets_cat = 'basic_shapes'
+    presets_cat = 'adv_shapes'
     # presets_cat = 'temporal'
 
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
@@ -494,13 +489,13 @@ if __name__ == '__main__':
                             batch_size=batch_size,
                             channel_mode=channel_mode)
 
-    model = build_effect_model_bi(x_y_metadata.in_x,
-                                  x_y_metadata.in_y,
-                                  architecture=architecture,
-                                  n_bin=x_y_metadata.n_bin,
-                                  n_cate=x_y_metadata.n_cate,
-                                  cate_names=x_y_metadata.cate_names,
-                                  n_cont=x_y_metadata.n_cont)
+    model = build_effect_model(x_y_metadata.in_x,
+                               x_y_metadata.in_y,
+                               architecture=architecture,
+                               n_bin=x_y_metadata.n_bin,
+                               n_cate=x_y_metadata.n_cate,
+                               cate_names=x_y_metadata.cate_names,
+                               n_cont=x_y_metadata.n_cont)
 
     if load_prev_model:
         log.info('Loading previous best model.')

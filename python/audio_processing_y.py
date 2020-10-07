@@ -219,7 +219,6 @@ if __name__ == '__main__':
     # params = {112, 113, 114}
     # effect = 'reverb-hall'
     # params = {81, 84, 86}
-    # effect = 'distortion_phaser'
 
     presets_cat = 'basic_shapes'
     # presets_cat = 'adv_shapes'
@@ -228,7 +227,7 @@ if __name__ == '__main__':
     datasets_dir = DATASETS_DIR
 
     generate_y_individual(
-        # os.path.join(datasets_dir, f'testing__{effect}'), params)
-        os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}'),
-        params
+        os.path.join(datasets_dir, f'testing__{effect}'), params
+        # os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}'),
+        # params
     )

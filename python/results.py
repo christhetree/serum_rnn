@@ -245,3 +245,39 @@
 # adv shapes  baseline cnn
 # epoch  3 loss: 0.1136 - acc: 0.9602 - val_loss: 0.0802 - val_acc: 0.9713
 # epoch  6 loss: 0.0983 - acc: 0.9663 - val_loss: 0.0765 - val_acc: 0.9730
+
+
+
+# seq_5_v3
+
+# compressor, basic shapes, baseline cnn 2x
+# epoch 39  loss: 0.0145 - mae: 0.0939 - val_loss: 0.0118 - val_mae: 0.0822 ...
+# epoch 50  loss: 0.0140 - mae: 0.0923 - val_loss: 0.0110 - val_mae: 0.0791
+# compressor, adv shapes, baseline cnn 2x
+# epoch 32  loss: 0.0105 - mae: 0.0801 - val_loss: 0.0075 - val_mae: 0.0658 ...
+
+# distortion, basic shapes, baseline cnn 2x
+# epoch 40  loss: 0.1385 - dist_mode_loss: 0.1036 - cont_output_loss: 0.0349 - dist_mode_acc: 0.9656 - cont_output_mae: 0.1528
+# val_loss: 0.1017 - val_dist_mode_loss: 0.0769 - val_cont_output_loss: 0.0248 - val_dist_mode_acc: 0.9712 - val_cont_output_mae: 0.1272
+
+# eq, basic shapes, baseline cnn 2x
+# epoch 16  loss: 0.0171 - mae: 0.0982 - val_loss: 0.0153 - val_mae: 0.0894
+# eq, adv shapes, baseline cnn 2x
+# epoch 24  loss: 0.0121 - mae: 0.0838 - val_loss: 0.0098 - val_mae: 0.0724 ...
+
+# phaser, basic shapes, baseline cnn 2x
+# epoch 81  loss: 0.0110 - mae: 0.0815 - val_loss: 0.0071 - val_mae: 0.0617
+
+# reverb-hall, basic shapes, baseline cnn 2x
+# epoch 13  loss: 0.0059 - mae: 0.0586 - val_loss: 0.0034 - val_mae: 0.0427
+
+# rnn, basic shapes, baseline cnn
+# epoch  9  loss: 0.0653 - acc: 0.9777 - val_loss: 0.0458 - val_acc: 0.9837
+
+
+
+# workshop results
+
+# distortion, basic shapes
+
+# rnn, basic shapes

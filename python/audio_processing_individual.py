@@ -333,9 +333,9 @@ if __name__ == '__main__':
 
     exclude_effects = {effect}
 
-    # presets = ['ld_postmodern_talking_[fp]']
-    presets_cat = 'basic_shapes'
-    presets = ['sine', 'triangle', 'saw', 'square']
+    presets = ['ld_postmodern_talking_[fp]']
+    # presets_cat = 'basic_shapes'
+    # presets = ['sine', 'triangle', 'saw', 'square']
     # presets_cat = 'adv_shapes'
     # presets = ['ld_power_5ths_[fp]', 'sy_mtron_saw_[sd]', 'sy_shot_dirt_stab_[im]', 'sy_vintage_bells_[fp]']
     # presets_cat = 'temporal'
@@ -349,8 +349,8 @@ if __name__ == '__main__':
     # renders_dir = os.path.join(renders_dir, 'training_eq_l_local')
     renders_dir = os.path.join(renders_dir, 'training_seq_5_v3')
 
-    # save_name = f'testing__{effect}'
-    save_name = f'seq_5_v3__basic_shapes__{effect}'
+    save_name = f'testing__{effect}'
+    # save_name = f'seq_5_v3__{presets_cat}__{effect}'
 
     save_dir = os.path.join(datasets_dir, save_name)
     base_effects = all_effects - exclude_effects

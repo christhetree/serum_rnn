@@ -17,7 +17,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 0
+GPU = 1
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -125,7 +125,7 @@ def train_model_gen(model: Model,
                     val_gen: RNNDataGenerator,
                     model_name: str,
                     epochs: int = 100,
-                    patience: int = 10,
+                    patience: int = 8,
                     output_dir_path: str = OUT_DIR,
                     use_multiprocessing: bool = True,
                     workers: int = 8) -> None:
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     epochs = 100
     val_split = 0.10
     test_split = 0.05
-    patience = 10
+    patience = 8
     used_cached_x_ids = True
     max_n = -1
     # use_multiprocessing = False
