@@ -255,29 +255,85 @@
 # epoch 50  loss: 0.0140 - mae: 0.0923 - val_loss: 0.0110 - val_mae: 0.0791
 # compressor, adv shapes, baseline cnn 2x
 # epoch 32  loss: 0.0105 - mae: 0.0801 - val_loss: 0.0075 - val_mae: 0.0658 ...
+# epoch 44  loss: 0.0100 - mae: 0.0783 - val_loss: 0.0070 - val_mae: 0.0637
+# compressor, temporal, baseline cnn 2x
+# epoch 18  loss: 0.0113 - mae: 0.0832 - val_loss: 0.0082 - val_mae: 0.0689 ...
+# epoch 71  loss: 0.0090 - mae: 0.0750 - val_loss: 0.0057 - val_mae: 0.0585
 
 # distortion, basic shapes, baseline cnn 2x
 # epoch 40  loss: 0.1385 - dist_mode_loss: 0.1036 - cont_output_loss: 0.0349 - dist_mode_acc: 0.9656 - cont_output_mae: 0.1528
 # val_loss: 0.1017 - val_dist_mode_loss: 0.0769 - val_cont_output_loss: 0.0248 - val_dist_mode_acc: 0.9712 - val_cont_output_mae: 0.1272
+# distortion, adv shapes, baseline cnn 2x
+# epoch 48  loss: 0.2018 - dist_mode_loss: 0.1614 - cont_output_loss: 0.0404 - dist_mode_acc: 0.9488 - cont_output_mae: 0.1657
+# val_loss: 0.1935 - val_dist_mode_loss: 0.1587 - val_cont_output_loss: 0.0348 - val_dist_mode_acc: 0.9467 - val_cont_output_mae: 0.1553
+# distortion, temporal, baseline cnn 2x
+# epoch 13  loss: 0.2067 - dist_mode_loss: 0.1719 - cont_output_loss: 0.0348 - dist_mode_acc: 0.9376 - cont_output_mae: 0.1538
+# val_loss: 0.1755 - val_dist_mode_loss: 0.1486 - val_cont_output_loss: 0.0268 - val_dist_mode_acc: 0.9436 - val_cont_output_mae: 0.1345 ...
+# epoch 39  loss: 0.1380 - dist_mode_loss: 0.1007 - cont_output_loss: 0.0373 - dist_mode_acc: 0.9677 - cont_output_mae: 0.1592
+# val_loss: 0.1199 - val_dist_mode_loss: 0.0910 - val_cont_output_loss: 0.0290 - val_dist_mode_acc: 0.9701 - val_cont_output_mae: 0.1419
 
 # eq, basic shapes, baseline cnn 2x
-# epoch 16  loss: 0.0171 - mae: 0.0982 - val_loss: 0.0153 - val_mae: 0.0894
+# epoch 16  loss: 0.0171 - mae: 0.0982 - val_loss: 0.0153 - val_mae: 0.0894 ... ?
 # eq, adv shapes, baseline cnn 2x
 # epoch 24  loss: 0.0121 - mae: 0.0838 - val_loss: 0.0098 - val_mae: 0.0724 ...
+# epoch 39  loss: 0.0109 - mae: 0.0804 - val_loss: 0.0086 - val_mae: 0.0683
+# eq, temporal, baseline cnn 2x
+# epoch 51  loss: 0.0109 - mae: 0.0805 - val_loss: 0.0085 - val_mae: 0.0683
 
 # phaser, basic shapes, baseline cnn 2x
 # epoch 81  loss: 0.0110 - mae: 0.0815 - val_loss: 0.0071 - val_mae: 0.0617
+# phaser, adv shapes, baseline cnn 2x
+# epoch 32  loss: 0.0105 - mae: 0.0802 - val_loss: 0.0064 - val_mae: 0.0595
+# phaser, temporal, baseline cnn 2x
+# epoch 63  loss: 0.0104 - mae: 0.0801 - val_loss: 0.0066 - val_mae: 0.0611
 
 # reverb-hall, basic shapes, baseline cnn 2x
 # epoch 13  loss: 0.0059 - mae: 0.0586 - val_loss: 0.0034 - val_mae: 0.0427
+# reverb-hall, adv shapes, baseline cnn 2x
+# epoch 82  loss: 0.0094 - mae: 0.0747 - val_loss: 0.0074 - val_mae: 0.0642
+# reverb-hall, temporal, baseline cnn 2x
+# epoch 42  loss: 0.0078 - mae: 0.0679 - val_loss: 0.0055 - val_mae: 0.0552
+
 
 # rnn, basic shapes, baseline cnn
 # epoch  9  loss: 0.0653 - acc: 0.9777 - val_loss: 0.0458 - val_acc: 0.9837
-
+# rnn, adv shapes, baseline cnn
+# epoch  8  loss: 0.0559 - acc: 0.9815 - val_loss: 0.0403 - val_acc: 0.9858
+# rnn, temporal, baseline cnn
+# epoch 10  loss: 0.0552 - acc: 0.9819 - val_loss: 0.0383 - val_acc: 0.9877
 
 
 # workshop results
 
-# distortion, basic shapes
+# INFO:__main__:model_name = seq_5_v3__basic_shapes__rnn__baseline_cnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.048544157296419144, 'acc': 0.9833188652992249}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:n_effects: 1, n = 3329, % = 0.9969960949234005
+# INFO:__main__:n_effects: 2, n = 7939, % = 0.9833732208086661
+# INFO:__main__:n_effects: 3, n = 8099, % = 0.9813557229287566
+# INFO:__main__:n_effects: 4, n = 4000, % = 0.97275
+# INFO:__main__:n_effects: 5, n = 792, % = 0.9987373737373737
+# INFO:__main__:all_results length = 24159
+# INFO:__main__:all_results % = 0.9833188459787243
 
-# rnn, basic shapes
+# INFO:__main__:model_name = seq_5_v3__adv_shapes__rnn__baseline_cnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.043449752032756805, 'acc': 0.9849331378936768}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:n_effects: 1, n = 3304, % = 0.9930387409200968
+# INFO:__main__:n_effects: 2, n = 8049, % = 0.9845943595477699
+# INFO:__main__:n_effects: 3, n = 7949, % = 0.9788652660712039
+# INFO:__main__:n_effects: 4, n = 4025, % = 0.9878260869565217
+# INFO:__main__:n_effects: 5, n = 832, % = 1.0
+# INFO:__main__:all_results length = 24159
+# INFO:__main__:all_results % = 0.9849331512065896
+
+# INFO:__main__:model_name = seq_5_v3__temporal__rnn__baseline_cnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.04112916439771652, 'acc': 0.9863399267196655}
+# INFO:__main__:pred.shape = (24158, 5)
+# INFO:__main__:n_effects: 1, n = 3394, % = 0.9970536240424278
+# INFO:__main__:n_effects: 2, n = 8001, % = 0.9886264216972879
+# INFO:__main__:n_effects: 3, n = 8147, % = 0.9831839941082607
+# INFO:__main__:n_effects: 4, n = 3863, % = 0.976702045042713
+# INFO:__main__:n_effects: 5, n = 753, % = 0.99734395750332
+# INFO:__main__:all_results length = 24158
+# INFO:__main__:all_results % = 0.9863399288020531

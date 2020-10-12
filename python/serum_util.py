@@ -7,7 +7,8 @@ from typing import Dict
 import librenderman as rm
 from tqdm import tqdm
 
-from config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, PRESETS_DIR
+from config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, PRESETS_DIR, \
+    SERUM_PATH_2, SERUM_PATH_3
 
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
@@ -24,11 +25,18 @@ def load_preset(engine: rm.RenderEngine,
 
 def setup_serum(preset_path: str = None,
                 sr: int = RM_SR,
-                render_once: bool = True) -> rm.RenderEngine:
+                render_once: bool = True,
+                instance: int = 1) -> rm.RenderEngine:
     engine = rm.RenderEngine(sr, RM_BUFFER_SIZE, RM_FFT_SIZE)
-    engine.load_plugin(SERUM_PATH)
+    if instance == 1:
+        engine.load_plugin(SERUM_PATH)
+    elif instance == 2:
+        engine.load_plugin(SERUM_PATH_2)
+    else:
+        engine.load_plugin(SERUM_PATH_3)
 
     if preset_path:
+        assert os.path.exists(preset_path)
         load_preset(engine, preset_path, render_once=render_once)
 
     return engine

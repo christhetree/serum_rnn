@@ -1,7 +1,9 @@
 import logging
 import os
 from collections import defaultdict
+from typing import List
 
+import librosa
 import numpy as np
 from tensorflow.keras.models import load_model
 from tqdm import tqdm
@@ -15,7 +17,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-tf.config.experimental.set_visible_devices([], 'GPU')
+# tf.config.experimental.set_visible_devices([], 'GPU')
 
 # EFFECT_TO_Y_PARAMS = {
 #     'compressor': {270, 271, 272},
@@ -33,6 +35,49 @@ EFFECT_TO_Y_PARAMS = {
 }
 
 
+def plot_mel_seq(mel_seq: np.ndarray,
+                 effect_seq: np.ndarray,
+                 target_effect_names: List[str]) -> None:
+    from matplotlib import pyplot as plt
+    mel_seq = np.array(mel_seq)
+    effect_seq = np.array(effect_seq)
+    assert len(mel_seq.shape) == 4
+    assert len(effect_seq.shape) == 2
+    assert len(effect_seq) == len(mel_seq)
+    print(mel_seq.shape)
+    print(effect_seq.shape)
+
+    idx_to_effect = {v: k for k, v in EFFECT_TO_IDX_MAPPING.items()}
+    target_mel = mel_seq[0, :, :, 0]
+    orig_mel = mel_seq[0, :, :, 1]
+    plt.imshow(orig_mel, origin='lower')
+    plt.xlabel('audio frames')
+    plt.ylabel('Mel freq bins')
+    plt.title('original audio')
+    plt.show()
+
+    effect_names = []
+    for mels, effect_tensor in zip(mel_seq[1:], effect_seq[1:]):
+        base_mel = mels[:, :, 1]
+        effect_name = idx_to_effect[np.argmax(effect_tensor)]
+        effect_names.append(effect_name)
+        plt.imshow(base_mel, origin='lower')
+        plt.xlabel('audio frames')
+        plt.ylabel('Mel freq bins')
+        plt.title(' + '.join(effect_names))
+        plt.show()
+    plt.imshow(target_mel, origin='lower')
+    plt.xlabel('audio frames')
+    plt.ylabel('Mel freq bins')
+    plt.title(f'target audio: {" + ".join(target_effect_names)}')
+    plt.show()
+    plt.imshow(target_mel, origin='lower')
+    plt.xlabel('audio frames')
+    plt.ylabel('Mel freq bins')
+    plt.title(f'target audio: {" + ".join(target_effect_names)}')
+    plt.show()
+
+
 if __name__ == '__main__':
     in_x = 128
     in_y = 88
@@ -42,21 +87,22 @@ if __name__ == '__main__':
     cnn_architecture = baseline_cnn
     # cnn_architecture = baseline_cnn_2x
 
-    presets_cat = 'basic_shapes'
+    # presets_cat = 'basic_shapes'
     # presets_cat = 'adv_shapes'
-    # presets_cat = 'temporal'
+    presets_cat = 'temporal'
 
     use_multiprocessing = False
     # use_multiprocessing = True
     workers = 8
     model_dir = MODELS_DIR
+    # model_dir = OUT_DIR
 
     model_name = f'seq_5_v3__{presets_cat}__rnn__{cnn_architecture.__name__}' \
                  f'__best.h5'
 
     datasets_dir = DATASETS_DIR
-    # data_dir = os.path.join(datasets_dir, f'testing__rnn')
-    data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__rnn')
+    data_dir = os.path.join(datasets_dir, f'testing__rnn')
+    # data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__rnn')
     model_path = os.path.join(model_dir, model_name)
     log.info(f'data_dir = {data_dir}')
     log.info(f'model_path = {model_path}')
@@ -72,6 +118,13 @@ if __name__ == '__main__':
                                 effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
                                 batch_size=1,
                                 shuffle=False)
+
+    (mel_seq, effect_seq), target_effect = test_gen[0]
+    mel_seq = mel_seq[0]
+    effect_seq = effect_seq[0]
+    target_effect = target_effect[0]
+    plot_mel_seq(mel_seq, effect_seq, target_effect)
+    exit()
 
     model = load_model(model_path)
     model.summary()

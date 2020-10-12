@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import namedtuple
-from typing import List, Union, Set, Tuple
+from typing import List, Union, Set, Tuple, Any
 
 import numpy as np
 import tensorflow as tf
@@ -14,12 +14,13 @@ from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, param_to_effect
 from models import build_effect_model, baseline_cnn_2x, baseline_cnn, \
     exposure_cnn, baseline_lstm, baseline_cnn_shallow
+from util import parse_save_name
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 1
+GPU = 0
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -36,6 +37,162 @@ XYMetaData = namedtuple(
     'data_dir x_dir in_x in_y y_dir y_params y_params_str n_bin n_cate n_cont '
     'descs cate_names y_losses metrics'
 )
+
+
+class TestDataGenerator(Sequence):
+    def __init__(self,
+                 x_ids: List[Tuple[str, str, str]],
+                 x_y_metadata: XYMetaData,
+                 batch_size: int = 1,
+                 shuffle: bool = True,
+                 channel_mode: int = 1) -> None:
+        assert len(x_ids) >= batch_size
+        assert channel_mode == 1
+        assert batch_size == 1
+
+        if shuffle:
+            log.info('Shuffling x_ids!')
+            np.random.shuffle(x_ids)
+
+        assert channel_mode == -1 or channel_mode == 0 or channel_mode == 1
+        if channel_mode == -1:
+            log.warning('Data generator is using (b, b) channel mode!')
+        elif channel_mode == 0:
+            log.info('Data generator is using (x, x) channel mode.')
+        else:
+            log.info('Data generator is using (x, b) channel mode.')
+
+        self.x_ids = x_ids
+        self.x_dir = x_y_metadata.x_dir
+        self.in_x = x_y_metadata.in_x
+        self.in_y = x_y_metadata.in_y
+        self.y_dir = x_y_metadata.y_dir
+        self.y_params_str = x_y_metadata.y_params_str
+        self.n_bin = x_y_metadata.n_bin
+        self.descs = x_y_metadata.descs
+        self.n_cont = x_y_metadata.n_cont
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.channel_mode = channel_mode
+
+    def __len__(self) -> int:
+        return int(np.floor(len(self.x_ids) / self.batch_size))
+
+    def __getitem__(self, idx: int) -> ((np.ndarray, str, str, str), List[np.ndarray]):
+        start_idx = idx * self.batch_size
+        end_idx = (idx + 1) * self.batch_size
+        batch_x_ids = self.x_ids[start_idx:end_idx]
+        x = self._create_x_batch(batch_x_ids)
+        y = self._create_y_batch(batch_x_ids)
+        return x, y
+
+    def _create_x_batch(self,
+                        batch_x_ids: List[Tuple[str, str, str]]) -> Any:
+        x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
+                     dtype=np.float32)
+        render_name = None
+        base_render_name = None
+        preset = None
+
+        for idx, (x_id, mel_path, base_mel_path) in enumerate(batch_x_ids):
+            if self.channel_mode == 1:
+                mel_info = np.load(mel_path)
+                base_mel_info = np.load(base_mel_path)
+                render_name = mel_info['render_name'].item()
+                base_render_name = base_mel_info['render_name'].item()
+                preset = x_id.split('__')[0]
+                mel = mel_info['mel']
+                base_mel = base_mel_info['mel']
+                x[idx, :, :, 0] = mel
+                x[idx, :, :, 1] = base_mel
+            elif self.channel_mode == 0:
+                mel = np.load(mel_path)['mel']
+                x[idx, :, :, 0] = mel
+                x[idx, :, :, 1] = mel
+            else:
+                base_mel = np.load(base_mel_path)['mel']
+                x[idx, :, :, 0] = base_mel
+                x[idx, :, :, 1] = base_mel
+
+        return x, render_name, base_render_name, preset
+
+    def _create_y_batch(
+            self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:
+        y_bin = None
+        y_cates = []
+        y_cont = None
+        if self.n_bin:
+            y_bin = np.empty((self.batch_size, self.n_bin), dtype=np.float32)
+
+        for _ in self.descs:
+            y_cates.append(np.empty((self.batch_size,), dtype=np.int32))
+
+        if self.n_cont:
+            y_cont = np.empty((self.batch_size, self.n_cont), dtype=np.float32)
+
+        for idx, (x_id, _, _) in enumerate(batch_x_ids):
+            y_id = f'{x_id}__y_{self.y_params_str}.npz'
+            y_data = np.load(os.path.join(self.y_dir, y_id))
+            if self.n_bin:
+                y_bin[idx] = y_data['binary']
+
+            for desc, y_cate in zip(self.descs, y_cates):
+                y_cate[idx] = y_data[desc]
+
+            if self.n_cont:
+                y_cont[idx] = y_data['continuous']
+
+        y = []
+        if self.n_bin:
+            y.append(y_bin)
+        y.extend(y_cates)
+        if self.n_cont:
+            y.append(y_cont)
+
+        return y
+
+
+def get_effect_names(render_name: str) -> List[str]:
+    render_info = parse_save_name(render_name, is_dir=False)
+    effect_names = render_info['name'].split('_')
+    if 'dry' in effect_names:
+        effect_names.remove('dry')
+
+    return effect_names
+
+
+def get_eval_cnn_spec(gen: TestDataGenerator,
+                      save_name: str,
+                      max_n: int = 1000) -> None:
+    x_s = []
+    render_names = []
+    base_render_names = []
+    presets = []
+    for (x, render_name, base_render_name, preset), y in tqdm(gen):
+        if len(render_names) >= max_n:
+            break
+
+        effect_names = get_effect_names(render_name)
+        base_effect_names = get_effect_names(base_render_name)
+        if len(base_effect_names) + 1 == len(effect_names):
+            x_s.append(x)
+            render_names.append(render_name)
+            base_render_names.append(base_render_name)
+            presets.append(preset)
+
+    assert len(x_s) == len(render_names) == len(base_render_names) == len(presets)
+    log.info(f'Length of x_s = {len(x_s)}')
+    log.info(f'Saving: {save_name}')
+    save_path = os.path.join(OUT_DIR, save_name)
+    log.info('converting')
+    x_s = np.concatenate(x_s, axis=0)
+    log.info(x_s.shape)
+    log.info('converting done')
+    np.savez(save_path,
+             x_s=x_s,
+             render_names=render_names,
+             base_render_names=base_render_names,
+             presets=presets)
 
 
 class DataGenerator(Sequence):
@@ -432,10 +589,10 @@ if __name__ == '__main__':
     # params = {97, 99}
     # effect = 'eq'
     # params = {89, 91, 93}
-    effect = 'phaser'
-    params = {112, 113, 114}
-    # effect = 'reverb-hall'
-    # params = {81, 84, 86}
+    # effect = 'phaser'
+    # params = {112, 113, 114}
+    effect = 'reverb-hall'
+    params = {81, 84, 86}
 
     # architecture = baseline_cnn
     architecture = baseline_cnn_2x
@@ -457,8 +614,8 @@ if __name__ == '__main__':
     # load_prev_model = True
 
     # presets_cat = 'basic_shapes'
-    presets_cat = 'adv_shapes'
-    # presets_cat = 'temporal'
+    # presets_cat = 'adv_shapes'
+    presets_cat = 'temporal'
 
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
     model_name = f'seq_5_v3__{presets_cat}__{effect}__{architecture.__name__}' \
@@ -479,6 +636,17 @@ if __name__ == '__main__':
     log.info(f'val_x_ids length = {len(val_x_ids)}')
     log.info(f'test_x_ids length = {len(test_x_ids)}')
     log.info(f'batch_size = {batch_size}')
+
+    # test_x_ids = test_x_ids[:100]
+    spec_gen = TestDataGenerator(test_x_ids,
+                                 x_y_metadata,
+                                 batch_size=1,
+                                 channel_mode=1,
+                                 shuffle=True)
+    save_name = f'{model_name}__eval_spec_data.npz'
+    get_eval_cnn_spec(spec_gen, save_name)
+    print('done!')
+    exit()
 
     train_gen = DataGenerator(train_x_ids,
                               x_y_metadata,

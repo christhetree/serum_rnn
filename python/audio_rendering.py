@@ -248,7 +248,7 @@ def render_patch(engine: rm.RenderEngine,
     audio = np.array(engine.get_audio_frames(), dtype=np.float64)
 
     save_name = render_name
-    if rc.use_hashes:
+    if save_dir and rc.use_hashes:
         render_hash = hashlib.sha1(render_name.encode('utf-8')).hexdigest()
         render_hash = f'{render_hash}.wav'
         save_name = render_hash
