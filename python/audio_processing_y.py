@@ -8,8 +8,8 @@ import numpy as np
 from tqdm import tqdm
 
 from config import DATASETS_DIR
-from effects import param_to_type, DESC_TO_PARAM, \
-    param_to_effect, PARAM_TO_DESC
+from effects import PARAM_TO_TYPE, DESC_TO_PARAM, \
+    PARAM_TO_EFFECT, PARAM_TO_DESC
 from util import parse_save_name
 
 logging.basicConfig()
@@ -37,7 +37,7 @@ def parse_render_name_for_y(y: DefaultDict[str, List],
         if param in render_name_params:
             bin_values.append(float(render_name_params[param]))
         else:
-            effect = param_to_effect[param]
+            effect = PARAM_TO_EFFECT[param]
             bin_values.append(effect.default[param])
 
     if bin_values:
@@ -48,7 +48,7 @@ def parse_render_name_for_y(y: DefaultDict[str, List],
         if param in render_name_params:
             value = int(render_name_params[param])
         else:
-            effect = param_to_effect[param]
+            effect = PARAM_TO_EFFECT[param]
             n_categories = effect.categorical[param]
             value = int((effect.default[param] * n_categories) + 0.5)
         y[desc].append(value)
@@ -58,7 +58,7 @@ def parse_render_name_for_y(y: DefaultDict[str, List],
         if param in render_name_params:
             cont_values.append(render_name_params[param] / gran)
         else:
-            effect = param_to_effect[param]
+            effect = PARAM_TO_EFFECT[param]
             cont_values.append(effect.default[param])
 
     if cont_values:
@@ -71,30 +71,13 @@ def generate_y(path: str,
     assert os.path.isfile(path)
 
     data_npz_name = os.path.splitext(ntpath.basename(path))[0]
-    # effect_dir_name = os.path.normpath(path).split(os.path.sep)[-3]
-    # log.info(f'.npz file name: {data_npz_name}')
-    # log.info(f'Effect dir name: {effect_dir_name}')
-    #
-    # effect_dir_info = parse_save_name(effect_dir_name, is_dir=True)
-    # gran = effect_dir_info['gran']
-    # effect_names = effect_dir_info['name'].split('_')  # TODO
-    # log.info(f'Using granularity of {gran}')
-    # log.info(f'{effect_names} effects found.')
-    #
-    # if params is None:
-    #     log.info('No params provided. Calculating y for all params.')
-    #     params = set()
-    #     for effect_name in effect_names:
-    #         effect = get_effect(effect_name)
-    #         for param in effect.order:
-    #             params.add(param)
 
     params = sorted(list(params))
     log.info(f'Calculating y for the following params: {params}')
 
     param_types = defaultdict(list)
     for param in params:
-        param_types[param_to_type[param]].append(param)
+        param_types[PARAM_TO_TYPE[param]].append(param)
     binary_params = sorted(param_types['binary'])
     categorical_params = sorted(param_types['categorical'])
     continuous_params = sorted(param_types['continuous'])
@@ -131,7 +114,7 @@ def generate_y(path: str,
     n_categories = []
     param_to_desc = []
     for param in categorical_params:
-        effect = param_to_effect[param]
+        effect = PARAM_TO_EFFECT[param]
         n_classes = effect.categorical[param]
         desc = PARAM_TO_DESC[param]
         param_to_desc.append(desc)
@@ -170,7 +153,7 @@ def generate_y_individual(data_dir: str,
 
     param_types = defaultdict(list)
     for param in params:
-        param_types[param_to_type[param]].append(param)
+        param_types[PARAM_TO_TYPE[param]].append(param)
     binary_params = sorted(param_types['binary'])
     categorical_params = sorted(param_types['categorical'])
     continuous_params = sorted(param_types['continuous'])

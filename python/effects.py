@@ -59,16 +59,16 @@ class Effect:
         self.order = order
 
 
-effects = {}
+EFFECTS = {}
 for effect_config_name in os.listdir(EFFECTS_DIR):
     if effect_config_name.endswith('.yaml'):
         with open(os.path.join(EFFECTS_DIR, effect_config_name), 'r') as f:
             effect_config = yaml.full_load(f)
             effect = Effect(**effect_config)
-            assert effect.name not in effects
-            effects[effect.name] = effect
+            assert effect.name not in EFFECTS
+            EFFECTS[effect.name] = effect
 
-log.info(f'Supported effects: {sorted(list(effects.keys()))}')
+log.info(f'Supported effects: {sorted(list(EFFECTS.keys()))}')
 
 with open(os.path.join(CONFIGS_DIR, 'serum_desc_to_param.yaml'), 'r') as f:
     DESC_TO_PARAM = yaml.full_load(f)
@@ -79,22 +79,22 @@ with open(os.path.join(CONFIGS_DIR, 'serum_param_to_desc.yaml'), 'r') as f:
 assert all(p in PARAM_TO_DESC for p in DESC_TO_PARAM.values())
 assert all(d in DESC_TO_PARAM for d in PARAM_TO_DESC.values())
 assert 'name' not in DESC_TO_PARAM
-assert all(effect_name not in DESC_TO_PARAM for effect_name in effects.keys())
+assert all(effect_name not in DESC_TO_PARAM for effect_name in EFFECTS.keys())
 
-all_params = [p for e in effects.values() for p in e.order]
-assert len(all_params) == len(set(all_params))
-assert all(p in PARAM_TO_DESC for p in all_params)
+ALL_PARAMS = [p for e in EFFECTS.values() for p in e.order]
+assert len(ALL_PARAMS) == len(set(ALL_PARAMS))
+assert all(p in PARAM_TO_DESC for p in ALL_PARAMS)
 
-param_to_effect = {p: e for e in effects.values() for p in e.order}
-param_to_type = {}
-for effect in effects.values():
+PARAM_TO_EFFECT = {p: e for e in EFFECTS.values() for p in e.order}
+PARAM_TO_TYPE = {}
+for effect in EFFECTS.values():
     for param in effect.binary:
-        param_to_type[param] = 'binary'
+        PARAM_TO_TYPE[param] = 'binary'
     for param in effect.categorical.keys():
-        param_to_type[param] = 'categorical'
+        PARAM_TO_TYPE[param] = 'categorical'
     for param in effect.continuous:
-        param_to_type[param] = 'continuous'
+        PARAM_TO_TYPE[param] = 'continuous'
 
 
 def get_effect(name: str) -> Effect:
-    return effects[name]
+    return EFFECTS[name]

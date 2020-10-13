@@ -2,18 +2,17 @@ import hashlib
 import logging
 import os
 from itertools import combinations
-from typing import Set, List
+from typing import Set
 
 import numpy as np
 import soundfile as sf
 import yaml
 from tqdm import tqdm
 
-from audio_processing import ProcessConfig, create_save_name, get_mel_spec, \
-    generate_base_render_hash
-from config import CONFIGS_DIR, \
-    DATASETS_DIR, DATA_DIR
-from effects import get_effect, PARAM_TO_DESC
+from audio_processing_util import ProcessConfig, create_save_name, \
+    generate_base_render_hash, get_mel_spec, create_save_dir, \
+    get_base_effect_info
+from config import CONFIGS_DIR, DATASETS_DIR
 from training_rnn import EFFECT_TO_IDX_MAPPING
 from util import get_render_names, get_mapping, generate_exclude_descs, \
     parse_save_name
@@ -21,30 +20,6 @@ from util import get_render_names, get_mapping, generate_exclude_descs, \
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
-
-
-def create_save_dir(pc: ProcessConfig,
-                    create_dirs: bool = True) -> str:
-    assert os.path.exists(pc.root_dir)
-    save_dir_name = create_save_name(pc)
-
-    save_dir = os.path.join(pc.root_dir, 'processing')
-    if not create_dirs:
-        assert os.path.exists(save_dir)
-
-    if not os.path.exists(save_dir):
-        log.info('Creating processing folder.')
-        os.makedirs(save_dir)
-
-    save_dir = os.path.join(save_dir, save_dir_name)
-    if not create_dirs:
-        assert os.path.exists(save_dir)
-
-    if not os.path.exists(save_dir):
-        log.info(f'Creating dir: {save_dir_name}')
-        os.makedirs(save_dir)
-
-    return save_dir
 
 
 def process_audio_individual(pc: ProcessConfig) -> None:
@@ -141,28 +116,6 @@ def process_audio_all_combos(orig_pc: ProcessConfig,
         root_dir = os.path.join(preset_dir, f'{"_".join(effects)}__gran_{gran}')
         pc = orig_pc._replace(use_hashes=use_hashes, root_dir=root_dir)
         process_audio_individual(pc)
-
-
-def get_base_effect_info(orig_effect_dir_name: str,
-                         exclude_descs: Set[str] = None) -> (str, List[str]):
-    if exclude_descs is None:
-        exclude_descs = set()
-
-    orig_effect_dir_info = parse_save_name(orig_effect_dir_name, is_dir=True)
-    gran = orig_effect_dir_info['gran']
-    orig_effect_names = orig_effect_dir_info['name'].split('_')
-
-    base_effect_names = []
-    for effect_name in orig_effect_names:
-        effect = get_effect(effect_name)
-        if not all(PARAM_TO_DESC[p] in exclude_descs for p in effect.order):
-            base_effect_names.append(effect_name)
-    if not base_effect_names:
-        base_effect_names.append('dry')
-
-    base_effect_names = sorted(list(set(base_effect_names)))
-    base_effect_dir_name = f'{"_".join(base_effect_names)}__gran_{gran}'
-    return base_effect_dir_name, base_effect_names
 
 
 def combine_mels_individual(mels_dir: str,
@@ -367,5 +320,3 @@ if __name__ == '__main__':
                                 exclude_effects,
                                 base_effects,
                                 gran=100)  # TODO
-
-    exit()

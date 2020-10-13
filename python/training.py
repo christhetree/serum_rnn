@@ -11,7 +11,7 @@ from tensorflow.python.keras.utils.data_utils import Sequence
 from tqdm import tqdm
 
 from config import OUT_DIR, DATASETS_DIR
-from effects import DESC_TO_PARAM, param_to_effect
+from effects import DESC_TO_PARAM, PARAM_TO_EFFECT
 from models import build_effect_model, baseline_cnn_2x, baseline_cnn, \
     exposure_cnn, baseline_lstm, baseline_cnn_shallow
 from util import parse_save_name
@@ -493,7 +493,7 @@ def get_x_y_metadata(data_dir: str,
 
     for desc in descs:
         param = DESC_TO_PARAM[desc]
-        effect = param_to_effect[param]
+        effect = PARAM_TO_EFFECT[param]
         n_cate.append(effect.categorical[param])
 
         cate_name = desc.strip().lower().replace(' ', '_')

@@ -7,8 +7,7 @@ from typing import Dict
 import librenderman as rm
 from tqdm import tqdm
 
-from config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, PRESETS_DIR, \
-    SERUM_PATH_2, SERUM_PATH_3
+from config import RM_SR, RM_BUFFER_SIZE, RM_FFT_SIZE, SERUM_PATH, PRESETS_DIR
 
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
@@ -28,12 +27,13 @@ def setup_serum(preset_path: str = None,
                 render_once: bool = True,
                 instance: int = 1) -> rm.RenderEngine:
     engine = rm.RenderEngine(sr, RM_BUFFER_SIZE, RM_FFT_SIZE)
-    if instance == 1:
-        engine.load_plugin(SERUM_PATH)
-    elif instance == 2:
-        engine.load_plugin(SERUM_PATH_2)
-    else:
-        engine.load_plugin(SERUM_PATH_3)
+    engine.load_plugin(SERUM_PATH)
+    # if instance == 1:
+    #     engine.load_plugin(SERUM_PATH)
+    # elif instance == 2:
+    #     engine.load_plugin(SERUM_PATH_2)
+    # else:
+    #     engine.load_plugin(SERUM_PATH_3)
 
     if preset_path:
         assert os.path.exists(preset_path)
@@ -109,7 +109,7 @@ def crawl_presets(root_dir: str,
 
 
 if __name__ == '__main__':
-    from effects import effects, get_effect
+    from effects import EFFECTS, get_effect
     descriptions = []
 
     presets_path = os.path.join(PRESETS_DIR, 'subset')

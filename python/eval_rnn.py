@@ -1,81 +1,19 @@
 import logging
 import os
 from collections import defaultdict
-from typing import List
 
-import librosa
 import numpy as np
 from tensorflow.keras.models import load_model
 from tqdm import tqdm
-import tensorflow as tf
 
-from config import OUT_DIR, DATASETS_DIR, MODELS_DIR
+from config import DATASETS_DIR, MODELS_DIR
+from eval_util import plot_mel_seq
 from models import baseline_cnn
 from training_rnn import EFFECT_TO_IDX_MAPPING, get_x_ids, RNNDataGenerator
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
-
-# tf.config.experimental.set_visible_devices([], 'GPU')
-
-# EFFECT_TO_Y_PARAMS = {
-#     'compressor': {270, 271, 272},
-#     'distortion': {97, 99},
-#     'eq': {88, 90, 92, 94},
-#     'flanger': {105, 106, 107},
-#     'phaser': {111, 112, 113, 114},
-# }
-EFFECT_TO_Y_PARAMS = {
-    'compressor': {270, 271, 272},
-    'distortion': {97, 99},
-    'eq': {89, 91, 93},
-    'phaser': {112, 113, 114},
-    'reverb-hall': {81, 84, 86},
-}
-
-
-def plot_mel_seq(mel_seq: np.ndarray,
-                 effect_seq: np.ndarray,
-                 target_effect_names: List[str]) -> None:
-    from matplotlib import pyplot as plt
-    mel_seq = np.array(mel_seq)
-    effect_seq = np.array(effect_seq)
-    assert len(mel_seq.shape) == 4
-    assert len(effect_seq.shape) == 2
-    assert len(effect_seq) == len(mel_seq)
-    print(mel_seq.shape)
-    print(effect_seq.shape)
-
-    idx_to_effect = {v: k for k, v in EFFECT_TO_IDX_MAPPING.items()}
-    target_mel = mel_seq[0, :, :, 0]
-    orig_mel = mel_seq[0, :, :, 1]
-    plt.imshow(orig_mel, origin='lower')
-    plt.xlabel('audio frames')
-    plt.ylabel('Mel freq bins')
-    plt.title('original audio')
-    plt.show()
-
-    effect_names = []
-    for mels, effect_tensor in zip(mel_seq[1:], effect_seq[1:]):
-        base_mel = mels[:, :, 1]
-        effect_name = idx_to_effect[np.argmax(effect_tensor)]
-        effect_names.append(effect_name)
-        plt.imshow(base_mel, origin='lower')
-        plt.xlabel('audio frames')
-        plt.ylabel('Mel freq bins')
-        plt.title(' + '.join(effect_names))
-        plt.show()
-    plt.imshow(target_mel, origin='lower')
-    plt.xlabel('audio frames')
-    plt.ylabel('Mel freq bins')
-    plt.title(f'target audio: {" + ".join(target_effect_names)}')
-    plt.show()
-    plt.imshow(target_mel, origin='lower')
-    plt.xlabel('audio frames')
-    plt.ylabel('Mel freq bins')
-    plt.title(f'target audio: {" + ".join(target_effect_names)}')
-    plt.show()
 
 
 if __name__ == '__main__':

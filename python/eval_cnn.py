@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-from config import DATASETS_DIR, OUT_DIR, MODELS_DIR
+from config import DATASETS_DIR, MODELS_DIR
 from models import baseline_cnn_2x
 from training import get_x_y_metadata, DataGenerator, get_x_ids
 
