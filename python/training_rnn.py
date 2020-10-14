@@ -1,17 +1,16 @@
 import logging
 import os
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.python.keras.utils.data_utils import Sequence
 from tqdm import tqdm
 
 from config import OUT_DIR, DATASETS_DIR
-from models import baseline_cnn_2x, baseline_effect_rnn, baseline_cnn
+from models import baseline_effect_rnn, baseline_cnn
+from training_util import RNNDataGenerator, EFFECT_TO_IDX_MAPPING
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -22,102 +21,8 @@ physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
     tf.config.experimental.set_visible_devices(physical_devices[GPU], 'GPU')
-    # tf.config.experimental.set_memory_growth(physical_devices[GPU], enable=True)
-
-
-# EFFECT_TO_IDX_MAPPING = {
-#     'compressor': 0,
-#     'distortion': 1,
-#     'eq': 2,
-#     'flanger': 3,
-#     'phaser': 4,
-# }
-EFFECT_TO_IDX_MAPPING = {
-    'compressor': 0,
-    'distortion': 1,
-    'eq': 2,
-    'phaser': 3,
-    'reverb-hall': 4
-}
-
-
-class RNNDataGenerator(Sequence):
-    def __init__(self,
-                 x_ids: List[Tuple[List[str], List[str]]],
-                 in_x: int,
-                 in_y: int,
-                 n_effects: int,
-                 effect_name_to_idx: Dict[str, int],
-                 batch_size: int = 128,
-                 shuffle: bool = True) -> None:
-        assert len(x_ids) >= batch_size
-
-        if shuffle:
-            np.random.shuffle(x_ids)
-
-        self.x_ids = x_ids
-        self.in_x = in_x
-        self.in_y = in_y
-        self.n_effects = n_effects
-        self.effect_name_to_idx = effect_name_to_idx
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-
-    def __len__(self) -> int:
-        return int(np.floor(len(self.x_ids) / self.batch_size))
-
-    def __getitem__(self, idx: int) -> ((np.ndarray, np.ndarray), np.ndarray):
-        start_idx = idx * self.batch_size
-        end_idx = (idx + 1) * self.batch_size
-        batch_x_ids = self.x_ids[start_idx:end_idx]
-        x = self._create_x_batch(batch_x_ids)
-        y = self._create_y_batch(batch_x_ids)
-        return x, y
-
-    def _create_x_batch(
-            self,
-            batch_x_ids: List[Tuple[List[str], List[str]]]
-    ) -> (np.ndarray, np.ndarray):
-        mel_seqs = []
-        effect_seqs = []
-        for mel_path_seq, effect_names in batch_x_ids:
-            target_mel = np.load(mel_path_seq[-1])['mel']
-            mel_seq = []
-            for mel_path in mel_path_seq[:-1]:
-                mel = np.load(mel_path)['mel']
-                mel_seq.append(np.stack([target_mel, mel], axis=-1))
-            mel_seqs.append(mel_seq)
-
-            effect_seq = []
-            for effect_name in effect_names[:-1]:
-                one_hot = np.zeros((self.n_effects + 1,), dtype=np.float32)
-                effect_idx = self.effect_name_to_idx.get(effect_name, -1)
-                one_hot[effect_idx] = 1.0
-                effect_seq.append(one_hot)
-            effect_seqs.append(effect_seq)
-
-        padded_mel_seqs = pad_sequences(mel_seqs,
-                                        value=0.0,
-                                        padding='post',
-                                        dtype='float32')
-        padded_effect_seqs = pad_sequences(effect_seqs,
-                                           value=0.0,
-                                           padding='post',
-                                           dtype='float32')
-        return padded_mel_seqs, padded_effect_seqs
-
-    def _create_y_batch(
-            self, batch_x_ids: List[Tuple[List[str], List[str]]]) -> np.ndarray:
-        y = np.array(
-            [self.effect_name_to_idx[effect_names[-1]]
-             for _, effect_names in batch_x_ids],
-            dtype=np.int32
-        )
-        return y
-
-    def on_epoch_end(self) -> None:
-        if self.shuffle:
-            np.random.shuffle(self.x_ids)
+    # tf.config.experimental.set_memory_growth(physical_devices[GPU],
+    #                                          enable=True)
 
 
 def train_model_gen(model: Model,

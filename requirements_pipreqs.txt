@@ -1,0 +1,13 @@
+tensorflow==2.3.0
+numpy==1.18.5
+librosa==0.8.0
+matplotlib==3.3.2
+tqdm==4.48.2
+scipy==1.4.1
+SoundFile==0.10.3.post1
+gym==0.17.3
+PyYAML==5.3.1
+scikit_learn==0.23.2
+stable_baselines==2.10.1
+stable_baselines3==0.9.0
+torch==1.6.0

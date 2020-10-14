@@ -1,8 +1,6 @@
 import logging
 import os
-from typing import Dict, Union, Set, Any
-
-import numpy as np
+from typing import Dict, Union, Set, List
 
 from effects import get_effect, PARAM_TO_DESC
 
@@ -36,6 +34,15 @@ def parse_save_name(save_name: str,
             result[token] = True
 
     return result
+
+
+def get_effect_names(render_name: str) -> List[str]:
+    render_info = parse_save_name(render_name, is_dir=False)
+    effect_names = render_info['name'].split('_')
+    if 'dry' in effect_names:
+        effect_names.remove('dry')
+
+    return effect_names
 
 
 def get_render_names(renders_dir: str,
