@@ -1,15 +1,9 @@
 import logging
 import os
 from collections import namedtuple
-from typing import Optional, Set, List
+from typing import Set, List
 
-import librosa as lr
-import numpy as np
-from scipy.signal import butter, lfilter
-
-from config import MEL_SR, HOP_LENGTH, N_MELS, N_FFT
-from effects import get_effect, DESC_TO_PARAM, \
-    PARAM_TO_EFFECT, PARAM_TO_DESC
+from effects import get_effect, DESC_TO_PARAM, PARAM_TO_EFFECT, PARAM_TO_DESC
 from util import parse_save_name
 
 logging.basicConfig()
@@ -18,84 +12,10 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 ProcessConfig = namedtuple(
     'ProcessConfig',
-    'hop_length max_n_of_frames n_fft n_mels normalize_audio normalize_mel sr '
-    'use_hashes root_dir'
+    'sr n_fft hop_length n_mels max_n_of_frames norm_audio norm_mel fmin fmax '
+    'db_ref top_db n_mfcc calc_cent calc_bw calc_flat use_hashes proc_dir_name '
+    'root_dir'
 )
-
-
-def bandpass_filter(y: np.ndarray,
-                    sr: int,
-                    lo_cut: int,
-                    hi_cut: int,
-                    order: int = 6,
-                    normalize_output: bool = False) -> Optional[np.ndarray]:
-    nyq = 0.5 * sr
-    assert nyq > hi_cut and lo_cut > 0
-
-    lo = lo_cut / nyq
-    hi = hi_cut / nyq
-    b, a = butter(N=order, Wn=[lo, hi], btype='band')
-    filtered_y = lfilter(b, a, y).astype(np.float32)
-
-    if not np.all(np.isfinite(filtered_y)):
-        log.info(f'Bandpass filter of [{lo_cut}, {hi_cut}] failed')
-        return None
-
-    if normalize_output:
-        filtered_y = lr.util.normalize(filtered_y)
-
-    return filtered_y
-
-
-def add_noise(y: np.ndarray,
-              snr: float,
-              normalize_output: bool = False) -> np.ndarray:
-    audio_rms = np.sqrt(np.mean(y ** 2))
-    noise_rms = np.sqrt((audio_rms ** 2) / (10 ** (snr / 10.0)))
-    noise_std = noise_rms
-    noise = np.random.normal(0, noise_std, y.shape[0]).astype(np.float32)
-    output = y + noise
-
-    if normalize_output:
-        output = lr.util.normalize(output)
-
-    return output
-
-
-def get_mel_spec(audio: np.ndarray,
-                 sr: int = MEL_SR,
-                 hop_length: int = HOP_LENGTH,
-                 n_mels: int = N_MELS,
-                 n_fft: int = N_FFT,
-                 max_n_of_frames: Optional[int] = None,
-                 normalize_audio: bool = True,
-                 normalize_mel: bool = True,
-                 db_ref: float = 1.0,
-                 top_db: float = 80.0) -> np.ndarray:
-    if normalize_audio:
-        audio = lr.util.normalize(audio)
-
-    if max_n_of_frames:
-        audio = audio[:max_n_of_frames]
-        audio_length = audio.shape[0]
-
-        if audio_length < max_n_of_frames:
-            audio = np.concatenate(
-                [audio, np.zeros(max_n_of_frames - audio_length)])
-
-    mel_spec = lr.feature.melspectrogram(
-        audio,
-        sr=sr,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        n_mels=n_mels
-    )
-    mel_spec = lr.power_to_db(mel_spec, ref=db_ref, top_db=top_db)
-
-    if normalize_mel:
-        mel_spec = mel_spec / top_db
-
-    return mel_spec
 
 
 def create_save_dir(pc: ProcessConfig,
@@ -103,7 +23,7 @@ def create_save_dir(pc: ProcessConfig,
     assert os.path.exists(pc.root_dir)
     save_dir_name = create_save_name(pc)
 
-    save_dir = os.path.join(pc.root_dir, 'processing')
+    save_dir = os.path.join(pc.root_dir, pc.proc_dir_name)
     if not create_dirs:
         assert os.path.exists(save_dir)
 
@@ -123,11 +43,23 @@ def create_save_dir(pc: ProcessConfig,
 
 
 def create_save_name(pc: ProcessConfig) -> str:
-    save_name = f'mel__sr_{pc.sr}__frames_{pc.max_n_of_frames}__' \
-                f'n_fft_{pc.n_fft}__n_mels_{pc.n_mels}__' \
-                f'hop_len_{pc.hop_length}__' \
-                f'norm_audio_{str(pc.normalize_audio)[0]}__' \
-                f'norm_mel_{str(pc.normalize_mel)[0]}'
+    save_name = f'proc__' \
+                f'sr_{pc.sr}__' \
+                f'n_fft_{pc.n_fft}__' \
+                f'hop_length_{pc.hop_length}__' \
+                f'n_mels_{pc.n_mels}__' \
+                f'max_n_of_frames_{pc.max_n_of_frames}__' \
+                f'norm_audio_{pc.norm_audio}__' \
+                f'norm_mel_{pc.norm_mel}__' \
+                f'fmin_{pc.fmin}__' \
+                f'fmax_{pc.fmax}__' \
+                f'db_ref_{pc.db_ref}__' \
+                f'top_db_{pc.top_db}__' \
+                f'n_mfcc_{pc.n_mfcc}__' \
+                f'calc_cent_{pc.calc_cent}__' \
+                f'calc_bw_{pc.calc_bw}__' \
+                f'calc_flat_{pc.calc_flat}'
+
     return save_name
 
 

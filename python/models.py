@@ -5,7 +5,7 @@ from typing import List, Any, Callable
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Dense, Flatten, MaxPooling2D, \
     Conv2D, Dropout, Bidirectional, Permute, Lambda, LSTM, Concatenate, \
-    TimeDistributed, Masking
+    TimeDistributed, Masking, GRU, BatchNormalization, Conv1D, MaxPooling1D
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.python.framework.ops import Tensor
 
@@ -87,18 +87,19 @@ def baseline_cnn(in_x: int,
 
 def baseline_cnn_2x(in_x: int,
                     in_y: int,
+                    n_mfcc: int = 0,
                     n_channels: int = 2,
                     fc_dim: int = 128,
                     dropout: float = 0.5) -> (Tensor, Tensor):
     log.info(f'Using fc_dim of {fc_dim}')
     log.info(f'Using dropout of {dropout}')
 
-    input_img = Input(shape=(in_x, in_y, n_channels))
+    mel_input = Input(shape=(in_x, in_y, n_channels), name='mel_input')
     x = Conv2D(64,
                (3, 3),
                strides=(1, 1),
                padding='same',
-               activation='elu')(input_img)
+               activation='elu')(mel_input)
     x = MaxPooling2D((4, 4))(x)
     x = Conv2D(128,
                (3, 3),
@@ -112,13 +113,60 @@ def baseline_cnn_2x(in_x: int,
                padding='same',
                activation='elu')(x)
     x = MaxPooling2D((4, 4))(x)
-    x = Flatten()(x)
-    x = Dense(fc_dim, activation='elu')(x)
+    mel_x = Flatten(name='mel_flatten')(x)
+
+    mfcc_input = Input(shape=(n_mfcc, in_y, n_channels), name='mfcc_input')
+    x = BatchNormalization(axis=-1)(mfcc_input)
+    x = Conv2D(64,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((2, 4))(x)
+    x = Conv2D(128,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((2, 4))(x)
+    x = Conv2D(128,
+               (3, 3),
+               strides=(1, 1),
+               padding='same',
+               activation='elu')(x)
+    x = MaxPooling2D((2, 4))(x)
+    mfcc_x = Flatten(name='mfcc_flatten')(x)
+
+    # one_d_input = Input(shape=(in_y, 10), name='one_d_input')
+    # x = Conv1D(64,
+    #            3,
+    #            strides=1,
+    #            padding='same',
+    #            activation='elu')(one_d_input)
+    # x = MaxPooling1D(4)(x)
+    # x = Conv1D(128,
+    #            3,
+    #            strides=1,
+    #            padding='same',
+    #            activation='elu')(x)
+    # x = MaxPooling1D(4)(x)
+    # x = Conv1D(128,
+    #            3,
+    #            strides=1,
+    #            padding='same',
+    #            activation='elu')(x)
+    # x = MaxPooling1D(4)(x)
+    # one_d_x = Flatten(name='one_d_flatten')(x)
+
+    # x = Concatenate(axis=-1)([mel_x, mfcc_x, one_d_x])
+    x = Concatenate(axis=-1)([mel_x, mfcc_x])
+    x = Dense(fc_dim, activation='elu', name='fc_1')(x)
     x = Dropout(dropout)(x)
-    x = Dense(fc_dim, activation='elu')(x)
+    x = Dense(fc_dim, activation='elu', name='fc_2')(x)
     fc = Dropout(dropout)(x)
 
-    return input_img, fc
+    # return [mel_input, mfcc_input, one_d_input], fc
+    return [mel_input, mfcc_input], fc
 
 
 def baseline_cnn_shallow(in_x: int,
@@ -214,6 +262,7 @@ def baseline_effect_rnn(in_x: int = 128,
 
 def build_effect_model(in_x: int,
                        in_y: int,
+                       n_mfcc: int = 0,
                        architecture: Callable = baseline_cnn_2x,
                        n_bin: int = 0,
                        n_cate: List[int] = None,
@@ -225,7 +274,7 @@ def build_effect_model(in_x: int,
     if n_cate is None:
         n_cate = []
     log.info(f'Using architecture: {architecture.__name__}')
-    input_img, fc = architecture(in_x, in_y, **kwargs)
+    inputs, fc = architecture(in_x, in_y, n_mfcc=n_mfcc, **kwargs)
 
     outputs = []
     if n_bin:
@@ -236,19 +285,18 @@ def build_effect_model(in_x: int,
         cate_output = Dense(n_classes, activation='softmax', name=name)(fc)
         outputs.append(cate_output)
 
-    # TODO
     if n_cont:
-        cont_output = Dense(n_cont, activation='linear', name='cont_output')(fc)
+        cont_output = Dense(n_cont, activation='relu', name='cont_output')(fc)
         outputs.append(cont_output)
 
     assert outputs
-    model = Model(input_img, outputs)
+    model = Model(inputs, outputs)
     return model
 
 
 if __name__ == '__main__':
     # input_img, outputs = baseline_cnn(128, 88, 2)
-    input_img, outputs = baseline_cnn_2x(128, 88, 2)
+    input_img, outputs = baseline_cnn_2x(128, 88, 30, 2)
     # # input_img, outputs = baseline_cnn_shallow(128, 88, 2)
     cnn = Model(input_img, outputs)
     cnn.summary()

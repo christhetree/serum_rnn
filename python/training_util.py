@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import namedtuple
-from typing import List, Tuple, Any, Dict
+from typing import List, Tuple, Any, Dict, Union
 
 import numpy as np
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -13,8 +13,8 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 XYMetaData = namedtuple(
     'XYMetaData',
-    'data_dir x_dir in_x in_y y_dir y_params y_params_str n_bin n_cate n_cont '
-    'descs cate_names y_losses metrics'
+    'data_dir x_dir in_x in_y n_mfcc y_dir y_params y_params_str n_bin n_cate '
+    'n_cont descs cate_names y_losses metrics'
 )
 
 EFFECT_TO_IDX_MAPPING = {
@@ -22,8 +22,18 @@ EFFECT_TO_IDX_MAPPING = {
     'distortion': 1,
     'eq': 2,
     'phaser': 3,
-    'reverb-hall': 4
+    'reverb-hall': 4,
 }
+
+EFFECT_TO_Y_PARAMS = {
+    'compressor': {270, 271, 272},
+    'distortion': {97, 99},
+    'eq': {89, 91, 93},
+    'phaser': {112, 113, 114},
+    'reverb-hall': {81, 84, 86},
+}
+
+assert EFFECT_TO_IDX_MAPPING.keys() == EFFECT_TO_Y_PARAMS.keys()
 
 
 class TestDataGenerator(Sequence):
@@ -163,6 +173,7 @@ class DataGenerator(Sequence):
         self.x_dir = x_y_metadata.x_dir
         self.in_x = x_y_metadata.in_x
         self.in_y = x_y_metadata.in_y
+        self.n_mfcc = x_y_metadata.n_mfcc
         self.y_dir = x_y_metadata.y_dir
         self.y_params_str = x_y_metadata.y_params_str
         self.n_bin = x_y_metadata.n_bin
@@ -175,7 +186,8 @@ class DataGenerator(Sequence):
     def __len__(self) -> int:
         return int(np.floor(len(self.x_ids) / self.batch_size))
 
-    def __getitem__(self, idx: int) -> (np.ndarray, List[np.ndarray]):
+    def __getitem__(self, idx: int) -> (Union[np.ndarray, List[np.ndarray]],
+                                        List[np.ndarray]):
         start_idx = idx * self.batch_size
         end_idx = (idx + 1) * self.batch_size
         batch_x_ids = self.x_ids[start_idx:end_idx]
@@ -183,27 +195,86 @@ class DataGenerator(Sequence):
         y = self._create_y_batch(batch_x_ids)
         return x, y
 
-    def _create_x_batch(self,
-                        batch_x_ids: List[Tuple[str, str, str]]) -> np.ndarray:
-        x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
-                     dtype=np.float32)
+    def _create_x_batch(
+            self,
+            batch_x_ids: List[Tuple[str, str, str]]
+    ) -> Union[np.ndarray, List[np.ndarray]]:
+        mel_x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
+                          dtype=np.float32)
+        mfcc_x = None
+        if self.n_mfcc:
+            mfcc_x = np.empty((self.batch_size, self.n_mfcc, self.in_y, 2),
+                               dtype=np.float32)
+
+        # one_d_x = np.empty((self.batch_size, self.in_y, 10), dtype=np.float32)
 
         for idx, (_, mel_path, base_mel_path) in enumerate(batch_x_ids):
             if self.channel_mode == 1:
-                mel = np.load(mel_path)['mel']
-                base_mel = np.load(base_mel_path)['mel']
-                x[idx, :, :, 0] = mel
-                x[idx, :, :, 1] = base_mel
-            elif self.channel_mode == 0:
-                mel = np.load(mel_path)['mel']
-                x[idx, :, :, 0] = mel
-                x[idx, :, :, 1] = mel
-            else:
-                base_mel = np.load(base_mel_path)['mel']
-                x[idx, :, :, 0] = base_mel
-                x[idx, :, :, 1] = base_mel
+                proc_data = np.load(mel_path)
+                mel = proc_data['mel']
+                base_proc_data = np.load(base_mel_path)
+                base_mel = base_proc_data['mel']
+                mel_x[idx, :, :, 0] = mel
+                mel_x[idx, :, :, 1] = base_mel
 
-        return x
+                if self.n_mfcc:
+                    mfcc = proc_data['mfcc']
+                    base_mfcc = base_proc_data['mfcc']
+                    mfcc_x[idx, :, :, 0] = mfcc
+                    mfcc_x[idx, :, :, 1] = base_mfcc
+
+                # spec_cent = proc_data['spec_cent'][0]
+                # base_spec_cent = base_proc_data['spec_cent'][0]
+                # one_d_x[idx, :, 0] = spec_cent
+                # one_d_x[idx, :, 1] = base_spec_cent
+                #
+                # spec_bw = proc_data['spec_bw'][0]
+                # base_spec_bw = base_proc_data['spec_bw'][0]
+                # one_d_x[idx, :, 2] = spec_bw
+                # one_d_x[idx, :, 3] = base_spec_bw
+                #
+                # spec_bw_hi = proc_data['spec_bw_hi'][0]
+                # base_spec_bw_hi = base_proc_data['spec_bw_hi'][0]
+                # one_d_x[idx, :, 4] = spec_bw_hi
+                # one_d_x[idx, :, 5] = base_spec_bw_hi
+                #
+                # spec_bw_lo = proc_data['spec_bw_lo'][0]
+                # base_spec_bw_lo = base_proc_data['spec_bw_lo'][0]
+                # one_d_x[idx, :, 6] = spec_bw_lo
+                # one_d_x[idx, :, 7] = base_spec_bw_lo
+                #
+                # spec_flat = proc_data['spec_flat'][0]
+                # base_spec_flat = base_proc_data['spec_flat'][0]
+                # one_d_x[idx, :, 8] = spec_flat
+                # one_d_x[idx, :, 9] = base_spec_flat
+
+            elif self.channel_mode == 0:
+                proc_data = np.load(mel_path)
+                mel = proc_data['mel']
+                mel_x[idx, :, :, 0] = mel
+                mel_x[idx, :, :, 1] = mel
+
+                if self.n_mfcc:
+                    mfcc = proc_data['mfcc']
+                    mfcc_x[idx, :, :, 0] = mfcc
+                    mfcc_x[idx, :, :, 1] = mfcc
+
+            else:
+                base_proc_data = np.load(base_mel_path)
+                base_mel = base_proc_data['mel']
+                mel_x[idx, :, :, 0] = base_mel
+                mel_x[idx, :, :, 1] = base_mel
+
+                if self.n_mfcc:
+                    base_mfcc = base_proc_data['mfcc']
+                    mfcc_x[idx, :, :, 0] = base_mfcc
+                    mfcc_x[idx, :, :, 1] = base_mfcc
+
+        if self.n_mfcc:
+            # return [mel_x, mfcc_x, one_d_x]
+            return [mel_x, mfcc_x]
+        else:
+            return mel_x
 
     def _create_y_batch(
             self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:

@@ -10,6 +10,7 @@ from tqdm import tqdm
 from config import DATASETS_DIR
 from effects import PARAM_TO_TYPE, DESC_TO_PARAM, \
     PARAM_TO_EFFECT, PARAM_TO_DESC
+from training_util import EFFECT_TO_Y_PARAMS
 from util import parse_save_name
 
 logging.basicConfig()
@@ -193,15 +194,11 @@ if __name__ == '__main__':
     gran = 100
 
     effect = 'compressor'
-    params = {270, 271, 272}
     # effect = 'distortion'
-    # params = {97, 99}
     # effect = 'eq'
-    # params = {89, 91, 93}
     # effect = 'phaser'
-    # params = {112, 113, 114}
     # effect = 'reverb-hall'
-    # params = {81, 84, 86}
+    params = EFFECT_TO_Y_PARAMS[effect]
 
     presets_cat = 'basic_shapes'
     # presets_cat = 'adv_shapes'
@@ -210,7 +207,7 @@ if __name__ == '__main__':
     datasets_dir = DATASETS_DIR
 
     generate_y_individual(
-        os.path.join(datasets_dir, f'testing__{effect}'), params
-        # os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}'),
-        # params
+        # os.path.join(datasets_dir, f'testing__{effect}'), params
+        # os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}'), params
+        os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}__{effect}'), params
     )

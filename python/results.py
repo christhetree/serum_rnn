@@ -253,6 +253,13 @@
 # compressor, basic shapes, baseline cnn 2x
 # epoch 39  loss: 0.0145 - mae: 0.0939 - val_loss: 0.0118 - val_mae: 0.0822 ...
 # epoch 50  loss: 0.0140 - mae: 0.0923 - val_loss: 0.0110 - val_mae: 0.0791
+
+# n_fft 2048
+# epoch 48  loss: 0.0134 - mae: 0.0904 - val_loss: 0.0107 - val_mae: 0.0785
+
+# n_fft 1024, hop_length 256
+# epoch 53  loss: 0.0139 - mae: 0.0924 - val_loss: 0.0104 - val_mae: 0.0772
+
 # compressor, adv shapes, baseline cnn 2x
 # epoch 32  loss: 0.0105 - mae: 0.0801 - val_loss: 0.0075 - val_mae: 0.0658 ...
 # epoch 44  loss: 0.0100 - mae: 0.0783 - val_loss: 0.0070 - val_mae: 0.0637
@@ -260,9 +267,37 @@
 # epoch 18  loss: 0.0113 - mae: 0.0832 - val_loss: 0.0082 - val_mae: 0.0689 ...
 # epoch 71  loss: 0.0090 - mae: 0.0750 - val_loss: 0.0057 - val_mae: 0.0585
 
+
 # distortion, basic shapes, baseline cnn 2x
 # epoch 40  loss: 0.1385 - dist_mode_loss: 0.1036 - cont_output_loss: 0.0349 - dist_mode_acc: 0.9656 - cont_output_mae: 0.1528
 # val_loss: 0.1017 - val_dist_mode_loss: 0.0769 - val_cont_output_loss: 0.0248 - val_dist_mode_acc: 0.9712 - val_cont_output_mae: 0.1272
+
+# n_fft 2048
+# epoch 52  loss: 0.1185 - dist_mode_loss: 0.0820 - cont_output_loss: 0.0364 - dist_mode_acc: 0.9734 - cont_output_mae: 0.1560
+# val_loss: 0.0892 - val_dist_mode_loss: 0.0647 - val_cont_output_loss: 0.0246 - val_dist_mode_acc: 0.9770 - val_cont_output_mae: 0.1269
+
+# n_fft 1024, hop_length 256
+# epoch 45  loss: 0.1648 - dist_mode_loss: 0.1224 - cont_output_loss: 0.0424 - dist_mode_acc: 0.9593 - cont_output_mae: 0.1703
+# val_loss: 0.1248 - val_dist_mode_loss: 0.0917 - val_cont_output_loss: 0.0332 - val_dist_mode_acc: 0.9673 - val_cont_output_mae: 0.1529
+
+# mfcc 60
+# epoch 38  loss: 0.1144 - dist_mode_loss: 0.0759 - cont_output_loss: 0.0386 - dist_mode_acc: 0.9755 - cont_output_mae: 0.1610
+# val_loss: 0.0781 - val_dist_mode_loss: 0.0514 - val_cont_output_loss: 0.0266 - val_dist_mode_acc: 0.9820 - val_cont_output_mae: 0.1339
+
+# mfcc 30
+# epoch 48  loss: 0.1033 - dist_mode_loss: 0.0650 - cont_output_loss: 0.0383 - dist_mode_acc: 0.9799 - cont_output_mae: 0.1603
+# val_loss: 0.0734 - val_dist_mode_loss: 0.0438 - val_cont_output_loss: 0.0296 - val_dist_mode_acc: 0.9850 - val_cont_output_mae: 0.1422
+
+# only mfcc 30
+# epoch 48  loss: 0.1867 - dist_mode_loss: 0.1423 - cont_output_loss: 0.0443 - dist_mode_acc: 0.9527 - cont_output_mae: 0.1762
+# val_loss: 0.1449 - val_dist_mode_loss: 0.1083 - val_cont_output_loss: 0.0366 - val_dist_mode_acc: 0.9624 - val_cont_output_mae: 0.1632 ...
+
+# proc
+# epoch 37  loss: 0.1078 - dist_mode_loss: 0.0704 - cont_output_loss: 0.0375 - dist_mode_acc: 0.9776 - cont_output_mae: 0.1583
+# val_loss: 0.0815 - val_dist_mode_loss: 0.0534 - val_cont_output_loss: 0.0281 - val_dist_mode_acc: 0.9811 - val_cont_output_mae: 0.1376 ...
+# epoch 38  loss: 0.1075 - dist_mode_loss: 0.0700 - cont_output_loss: 0.0375 - dist_mode_acc: 0.9780 - cont_output_mae: 0.1585
+# val_loss: 0.0768 - val_dist_mode_loss: 0.0496 - val_cont_output_loss: 0.0272 - val_dist_mode_acc: 0.9823 - val_cont_output_mae: 0.1352
+
 # distortion, adv shapes, baseline cnn 2x
 # epoch 48  loss: 0.2018 - dist_mode_loss: 0.1614 - cont_output_loss: 0.0404 - dist_mode_acc: 0.9488 - cont_output_mae: 0.1657
 # val_loss: 0.1935 - val_dist_mode_loss: 0.1587 - val_cont_output_loss: 0.0348 - val_dist_mode_acc: 0.9467 - val_cont_output_mae: 0.1553
@@ -272,20 +307,45 @@
 # epoch 39  loss: 0.1380 - dist_mode_loss: 0.1007 - cont_output_loss: 0.0373 - dist_mode_acc: 0.9677 - cont_output_mae: 0.1592
 # val_loss: 0.1199 - val_dist_mode_loss: 0.0910 - val_cont_output_loss: 0.0290 - val_dist_mode_acc: 0.9701 - val_cont_output_mae: 0.1419
 
+
 # eq, basic shapes, baseline cnn 2x
 # epoch 16  loss: 0.0171 - mae: 0.0982 - val_loss: 0.0153 - val_mae: 0.0894 ... ?
+
+# n_fft 2048
+# epoch 64  loss: 0.0121 - mae: 0.0842 - val_loss: 0.0100 - val_mae: 0.0733
+
+# n_fft 1024, hop_length 256
+# epoch 16  loss: 0.0152 - mae: 0.0934 - val_loss: 0.0132 - val_mae: 0.0833
+# epoch 64  loss: 0.0120 - mae: 0.0839 - val_loss: 0.0099 - val_mae: 0.0735
+# epoch 78  loss: 0.0117 - mae: 0.0830 - val_loss: 0.0096 - val_mae: 0.0725
+
 # eq, adv shapes, baseline cnn 2x
 # epoch 24  loss: 0.0121 - mae: 0.0838 - val_loss: 0.0098 - val_mae: 0.0724 ...
 # epoch 39  loss: 0.0109 - mae: 0.0804 - val_loss: 0.0086 - val_mae: 0.0683
 # eq, temporal, baseline cnn 2x
 # epoch 51  loss: 0.0109 - mae: 0.0805 - val_loss: 0.0085 - val_mae: 0.0683
 
+
 # phaser, basic shapes, baseline cnn 2x
 # epoch 81  loss: 0.0110 - mae: 0.0815 - val_loss: 0.0071 - val_mae: 0.0617
+
+# n_fft 2048
+# epoch 53  loss: 0.0111 - mae: 0.0821 - val_loss: 0.0072 - val_mae: 0.0630
+
+# n_fft 1024, hop_length 256
+# epoch 45  loss: 0.0122 - mae: 0.0857 - val_loss: 0.0083 - val_mae: 0.0677
+
+# mfcc 30
+# epoch 37  loss: 0.0085 - mae: 0.0718 - val_loss: 0.0052 - val_mae: 0.0532 ...
+
+# only mfcc 30
+# epoch 49  loss: 0.0116 - mae: 0.0839 - val_loss: 0.0086 - val_mae: 0.0683 ...
+
 # phaser, adv shapes, baseline cnn 2x
 # epoch 32  loss: 0.0105 - mae: 0.0802 - val_loss: 0.0064 - val_mae: 0.0595
 # phaser, temporal, baseline cnn 2x
 # epoch 63  loss: 0.0104 - mae: 0.0801 - val_loss: 0.0066 - val_mae: 0.0611
+
 
 # reverb-hall, basic shapes, baseline cnn 2x
 # epoch 13  loss: 0.0059 - mae: 0.0586 - val_loss: 0.0034 - val_mae: 0.0427
@@ -297,10 +357,25 @@
 
 # rnn, basic shapes, baseline cnn
 # epoch  9  loss: 0.0653 - acc: 0.9777 - val_loss: 0.0458 - val_acc: 0.9837
+
+# gru
+# epoch 13  loss: 0.0772 - acc: 0.9745 - val_loss: 0.0510 - val_acc: 0.9844
+# no cnn
+# epoch 31  loss: 1.1545 - acc: 0.3430 - val_loss: 1.1498 - val_acc: 0.3426
+
 # rnn, adv shapes, baseline cnn
 # epoch  8  loss: 0.0559 - acc: 0.9815 - val_loss: 0.0403 - val_acc: 0.9858
+
+# gru
+# epoch 10  loss: 0.0645 - acc: 0.9795 - val_loss: 0.0415 - val_acc: 0.9863
+# no cnn
+# epoch 20  loss: 1.1553 - acc: 0.3421 - val_loss: 1.1507 - val_acc: 0.3434
+
 # rnn, temporal, baseline cnn
 # epoch 10  loss: 0.0552 - acc: 0.9819 - val_loss: 0.0383 - val_acc: 0.9877
+
+# gru
+# epoch  8  loss: 0.0639 - acc: 0.9790 - val_loss: 0.0406 - val_acc: 0.9865
 
 
 # workshop results

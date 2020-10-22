@@ -100,18 +100,3 @@ def generate_exclude_descs(exclude_effects: Set[str] = None,
         exclude_descs.add(desc)
 
     return exclude_descs
-
-
-def get_mels_npz_path(prefix: str,
-                      effect_dir: str) -> str:
-    npz_dir = os.path.join(effect_dir, 'processing')
-    assert os.path.exists(npz_dir)
-
-    npz_names = []
-    for npz_name in os.listdir(npz_dir):
-        if npz_name.startswith(prefix) and '__y_' not in npz_name:  # TODO
-            npz_names.append(npz_name)
-
-    assert len(npz_names) == 1
-    mels_npz_path = os.path.join(npz_dir, npz_names[0])
-    return mels_npz_path

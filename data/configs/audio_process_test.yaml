@@ -1,11 +1,21 @@
-hop_length: 512
-max_n_of_frames: 44544
-n_fft: 4096
-n_mels: 128
-normalize_audio: False
-normalize_mel: True
 sr: 44100
+n_fft: 2048
+hop_length: 512
+n_mels: 128
+max_n_of_frames: 44544
+norm_audio: False
+norm_mel: True
+fmin: 20
+fmax: 16000
+db_ref: 1.0
+top_db: 80.0
+n_mfcc: 30
+calc_cent: True
+calc_bw: True
+calc_flat: True
+
 use_hashes: True
+proc_dir_name: processing
 
 root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/training_eq_l_local/ld_postmodern_talking_[fp]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
 
@@ -23,18 +33,3 @@ root_dir: /Users/christhetree/local_christhetree/audio_research/reverse_synthesi
 #root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_seq_5_v3/ld_postmodern_talking_[fp]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_phaser_reverb-hall__gran_100
 #root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_seq_5_v3/sq_busy_lines_[lcv]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_phaser_reverb-hall__gran_100
 #root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_seq_5_v3/sy_runtheharm_[gs]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_phaser_reverb-hall__gran_100
-
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/sine__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/triangle__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/saw__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/square__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/ld_power_5ths_[fp]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/sy_mtron_saw_[sd]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/sy_shot_dirt_stab_[im]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/sy_vintage_bells_[fp]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/ld_iheardulike5ths_[sd]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/ld_postmodern_talking_[fp]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/sq_busy_lines_[lcv]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100
-#root_dir: /home/testacc/samsung_t5_local/reverse_synthesis/training_eq_l/sy_runtheharm_[gs]__sr_44100__nl_1.00__rl_1.00__vel_127__midi_048/compressor_distortion_eq_flanger_phaser__gran_100

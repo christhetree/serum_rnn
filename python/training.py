@@ -11,7 +11,8 @@ from tqdm import tqdm
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, PARAM_TO_EFFECT
 from models import build_effect_model, baseline_cnn_2x
-from training_util import TestDataGenerator, DataGenerator, XYMetaData
+from training_util import TestDataGenerator, DataGenerator, XYMetaData, \
+    EFFECT_TO_Y_PARAMS
 from util import get_effect_names
 
 logging.basicConfig()
@@ -110,7 +111,8 @@ def get_x_y_metadata(data_dir: str,
 
     sample_mel_path = sample_x_data['mel_path'].item()
     assert os.path.exists(sample_mel_path)
-    sample_mel = np.load(sample_mel_path)['mel']
+    sample_proc_data = np.load(sample_mel_path)
+    sample_mel = sample_proc_data['mel']
 
     log.info(f'Input spectrogram shape = {sample_mel.shape}')
     assert len(sample_mel.shape) == 2
@@ -121,6 +123,14 @@ def get_x_y_metadata(data_dir: str,
     assert os.path.exists(sample_base_mel_path)
     sample_base_mel = np.load(sample_base_mel_path)['mel']
     assert sample_mel.shape == sample_base_mel.shape
+
+    n_mfcc = 0
+    if 'mfcc' in sample_proc_data:
+        sample_mfcc = sample_proc_data['mfcc']
+        log.info(f'Input mfcc shape = {sample_mfcc.shape}')
+        assert len(sample_mfcc.shape) == 2
+        assert sample_mfcc.shape[1] == in_y
+        n_mfcc = sample_mfcc.shape[0]
 
     y_dir = os.path.join(data_dir, 'y')
     assert os.path.exists(y_dir)
@@ -180,6 +190,7 @@ def get_x_y_metadata(data_dir: str,
                               x_dir=x_dir,
                               in_x=in_x,
                               in_y=in_y,
+                              n_mfcc=n_mfcc,
                               y_dir=y_dir,
                               y_params=set(y_params),
                               y_params_str=y_params_str,
@@ -198,9 +209,9 @@ def get_x_ids(data_dir: str,
               val_split: float = 0.10,
               test_split: float = 0.05,
               max_n: int = -1,
-              use_cached: bool = True) -> (List[Tuple[str, str, str]],
-                                           List[Tuple[str, str, str]],
-                                           List[Tuple[str, str, str]]):
+              use_cached: bool = True) -> (List[Tuple[str, ...]],
+                                           List[Tuple[str, ...]],
+                                           List[Tuple[str, ...]]):
     assert val_split + test_split < 1.0
     train_x_ids_path = os.path.join(data_dir, 'train_x_ids.npy')
     val_x_ids_path = os.path.join(data_dir, 'val_x_ids.npy')
@@ -248,16 +259,12 @@ def get_x_ids(data_dir: str,
 
 
 if __name__ == '__main__':
-    # effect = 'compressor'
-    # params = {270, 271, 272}
+    effect = 'compressor'
     # effect = 'distortion'
-    # params = {97, 99}
     # effect = 'eq'
-    # params = {89, 91, 93}
     # effect = 'phaser'
-    # params = {112, 113, 114}
-    effect = 'reverb-hall'
-    params = {81, 84, 86}
+    # effect = 'reverb-hall'
+    params = EFFECT_TO_Y_PARAMS[effect]
 
     # architecture = baseline_cnn
     architecture = baseline_cnn_2x
@@ -278,17 +285,18 @@ if __name__ == '__main__':
     load_prev_model = False
     # load_prev_model = True
 
-    # presets_cat = 'basic_shapes'
+    presets_cat = 'basic_shapes'
     # presets_cat = 'adv_shapes'
-    presets_cat = 'temporal'
+    # presets_cat = 'temporal'
 
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    model_name = f'seq_5_v3__{presets_cat}__{effect}__{architecture.__name__}' \
-                 f'__cm_{channel_mode}'
+    model_name = f'seq_5_v3__mfcc_30__{presets_cat}__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    # model_name = f'seq_5_v3__proc__{presets_cat}__{effect}__{architecture.__name__}__cm_{channel_mode}'
+    log.info(f'model_name = {model_name}')
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
-    data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}')
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}__{effect}')
     log.info(f'data_dir = {data_dir}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
@@ -301,17 +309,18 @@ if __name__ == '__main__':
     log.info(f'val_x_ids length = {len(val_x_ids)}')
     log.info(f'test_x_ids length = {len(test_x_ids)}')
     log.info(f'batch_size = {batch_size}')
+    # exit()
 
     # test_x_ids = test_x_ids[:100]
-    spec_gen = TestDataGenerator(test_x_ids,
-                                 x_y_metadata,
-                                 batch_size=1,
-                                 channel_mode=1,
-                                 shuffle=True)
-    save_name = f'{model_name}__eval_spec_data.npz'
-    get_eval_cnn_spec(spec_gen, save_name)
-    print('done!')
-    exit()
+    # spec_gen = TestDataGenerator(test_x_ids,
+    #                              x_y_metadata,
+    #                              batch_size=1,
+    #                              channel_mode=1,
+    #                              shuffle=True)
+    # save_name = f'{model_name}__eval_spec_data.npz'
+    # get_eval_cnn_spec(spec_gen, save_name)
+    # print('done!')
+    # exit()
 
     train_gen = DataGenerator(train_x_ids,
                               x_y_metadata,
@@ -324,11 +333,13 @@ if __name__ == '__main__':
 
     model = build_effect_model(x_y_metadata.in_x,
                                x_y_metadata.in_y,
+                               n_mfcc=x_y_metadata.n_mfcc,
                                architecture=architecture,
                                n_bin=x_y_metadata.n_bin,
                                n_cate=x_y_metadata.n_cate,
                                cate_names=x_y_metadata.cate_names,
                                n_cont=x_y_metadata.n_cont)
+    model.summary()
 
     if load_prev_model:
         log.info('Loading previous best model.')
@@ -337,7 +348,6 @@ if __name__ == '__main__':
     model.compile(optimizer='adam',
                   loss=x_y_metadata.y_losses,
                   metrics=x_y_metadata.metrics)
-    model.summary()
 
     train_model_gen(model,
                     train_gen,

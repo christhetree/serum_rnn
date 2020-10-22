@@ -16,7 +16,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-GPU = 1
+GPU = 0
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
@@ -135,11 +135,11 @@ if __name__ == '__main__':
     # presets_cat = 'temporal'
 
     # model_name = f'testing__rnn'
-    model_name = f'seq_5_v3__{presets_cat}__rnn__{cnn_architecture.__name__}'
+    model_name = f'seq_5_v3__mfcc_30__{presets_cat}__rnn__{cnn_architecture.__name__}'
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'testing__rnn')
-    data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__rnn')
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}__rnn')
     log.info(f'data_dir = {data_dir}')
 
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
