@@ -99,3 +99,75 @@ print('i like pie')
 # print(np.mean(results))
 # print(np.std(results))
 # exit()
+
+
+# x_id_to_y = {}
+# log.info('Creating x_id_to_y')
+# for x_id, mel_path, base_mel_path in tqdm(self.x_ids):
+#     y = super()._create_y_batch([(x_id, mel_path, base_mel_path)])
+#     y = [v[0] for v in y]
+#     self.n_y_cols = len(y)
+#     x_id_to_y[x_id] = y
+#
+# self.x_id_to_y = x_id_to_y
+
+# def _create_y_batch(
+#         self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:
+#     log.info('Using fast _create_y_batch')
+#     y = [[] for _ in range(self.n_y_cols)]
+#
+#     for x_id, _, _ in batch_x_ids:
+#         row_y = self.x_id_to_y[x_id]
+#         for all_v, row_v in zip(y, row_y):
+#             all_v.append(row_v)
+#
+#     return y
+
+# def __init__(self,
+#              x_ids: List[Tuple[str, str, str]],
+#              x_y_metadata: XYMetaData,
+#              batch_size: int = 128,
+#              shuffle: bool = True,
+#              channel_mode: int = 1) -> None:
+#     super().__init__(x_ids,
+#                      x_y_metadata,
+#                      batch_size=batch_size,
+#                      shuffle=shuffle,
+#                      channel_mode=channel_mode)
+
+
+# if y_id in self.y_id_to_y_data:
+#     y_data = self.y_id_to_y_data[y_id]
+# else:
+#     with np.load(os.path.join(self.y_dir, y_id)) as y_data:
+#         y_data_copy = copy.deepcopy(dict(y_data))
+#     self.y_id_to_y_data[y_id] = y_data_copy
+#
+#
+# def speed_test():
+#     import time
+#     import numpy as np
+#     from tqdm import tqdm
+#
+#     n = 10000
+#     batch_size = 128
+#     in_x = 128
+#     in_y = 88
+#     mel = np.ones((in_x, in_y))
+#
+#     start_time = time.time()
+#
+#     mels = np.empty((batch_size, in_x, in_y), dtype=np.float32)
+#
+#     for _ in tqdm(range(n)):
+#         for idx in range(batch_size):
+#             mels[idx, :, :] = mel
+#
+#         # mels = []
+#         # for idx in range(batch_size):
+#         #     mels.append(mel)
+#         #
+#         # mels = np.array(mels, dtype=np.float32)
+#
+#     end_time = time.time()
+#     print(f'time elapsed = {end_time - start_time}')

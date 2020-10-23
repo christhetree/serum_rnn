@@ -182,6 +182,7 @@ class DataGenerator(Sequence):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.channel_mode = channel_mode
+        self.y_id_to_y_data = {}
 
     def __len__(self) -> int:
         return int(np.floor(len(self.x_ids) / self.batch_size))
@@ -197,7 +198,7 @@ class DataGenerator(Sequence):
 
     def _create_x_batch(
             self,
-            batch_x_ids: List[Tuple[str, str, str]]
+            batch_x_ids: List[Tuple[str, ...]]
     ) -> Union[np.ndarray, List[np.ndarray]]:
         mel_x = np.empty((self.batch_size, self.in_x, self.in_y, 2),
                           dtype=np.float32)
@@ -205,8 +206,6 @@ class DataGenerator(Sequence):
         if self.n_mfcc:
             mfcc_x = np.empty((self.batch_size, self.n_mfcc, self.in_y, 2),
                                dtype=np.float32)
-
-        # one_d_x = np.empty((self.batch_size, self.in_y, 10), dtype=np.float32)
 
         for idx, (_, mel_path, base_mel_path) in enumerate(batch_x_ids):
             if self.channel_mode == 1:
@@ -222,32 +221,6 @@ class DataGenerator(Sequence):
                     base_mfcc = base_proc_data['mfcc']
                     mfcc_x[idx, :, :, 0] = mfcc
                     mfcc_x[idx, :, :, 1] = base_mfcc
-
-                # spec_cent = proc_data['spec_cent'][0]
-                # base_spec_cent = base_proc_data['spec_cent'][0]
-                # one_d_x[idx, :, 0] = spec_cent
-                # one_d_x[idx, :, 1] = base_spec_cent
-                #
-                # spec_bw = proc_data['spec_bw'][0]
-                # base_spec_bw = base_proc_data['spec_bw'][0]
-                # one_d_x[idx, :, 2] = spec_bw
-                # one_d_x[idx, :, 3] = base_spec_bw
-                #
-                # spec_bw_hi = proc_data['spec_bw_hi'][0]
-                # base_spec_bw_hi = base_proc_data['spec_bw_hi'][0]
-                # one_d_x[idx, :, 4] = spec_bw_hi
-                # one_d_x[idx, :, 5] = base_spec_bw_hi
-                #
-                # spec_bw_lo = proc_data['spec_bw_lo'][0]
-                # base_spec_bw_lo = base_proc_data['spec_bw_lo'][0]
-                # one_d_x[idx, :, 6] = spec_bw_lo
-                # one_d_x[idx, :, 7] = base_spec_bw_lo
-                #
-                # spec_flat = proc_data['spec_flat'][0]
-                # base_spec_flat = base_proc_data['spec_flat'][0]
-                # one_d_x[idx, :, 8] = spec_flat
-                # one_d_x[idx, :, 9] = base_spec_flat
-
             elif self.channel_mode == 0:
                 proc_data = np.load(mel_path)
                 mel = proc_data['mel']
@@ -258,7 +231,6 @@ class DataGenerator(Sequence):
                     mfcc = proc_data['mfcc']
                     mfcc_x[idx, :, :, 0] = mfcc
                     mfcc_x[idx, :, :, 1] = mfcc
-
             else:
                 base_proc_data = np.load(base_mel_path)
                 base_mel = base_proc_data['mel']
@@ -271,13 +243,12 @@ class DataGenerator(Sequence):
                     mfcc_x[idx, :, :, 1] = base_mfcc
 
         if self.n_mfcc:
-            # return [mel_x, mfcc_x, one_d_x]
             return [mel_x, mfcc_x]
         else:
             return mel_x
 
     def _create_y_batch(
-            self, batch_x_ids: List[Tuple[str, str, str]]) -> List[np.ndarray]:
+            self, batch_x_ids: List[Tuple[str, ...]]) -> List[np.ndarray]:
         y_bin = None
         y_cates = []
         y_cont = None
@@ -292,7 +263,14 @@ class DataGenerator(Sequence):
 
         for idx, (x_id, _, _) in enumerate(batch_x_ids):
             y_id = f'{x_id}__y_{self.y_params_str}.npz'
-            y_data = np.load(os.path.join(self.y_dir, y_id))
+
+            if y_id in self.y_id_to_y_data:
+                y_data = self.y_id_to_y_data[y_id]
+            else:
+                with np.load(os.path.join(self.y_dir, y_id)) as npz_data:
+                    y_data = {k: v.copy() for k, v in npz_data.items()}
+                self.y_id_to_y_data[y_id] = y_data
+
             if self.n_bin:
                 y_bin[idx] = y_data['binary']
 
@@ -314,6 +292,59 @@ class DataGenerator(Sequence):
     def on_epoch_end(self) -> None:
         if self.shuffle:
             np.random.shuffle(self.x_ids)
+
+
+class FastDataGenerator(DataGenerator):
+    def _create_x_batch(
+            self,
+            batch_x_ids: List[Tuple[str, ...]]
+    ) -> List[np.ndarray]:
+        mels = []
+        base_mels = []
+        mfccs = []
+        base_mfccs = []
+
+        for idx, (_, mel_path, base_mel_path) in enumerate(batch_x_ids):
+            if self.channel_mode == 1:
+                proc_data = np.load(mel_path)
+                mel = proc_data['mel']
+                base_proc_data = np.load(base_mel_path)
+                base_mel = base_proc_data['mel']
+                mels.append(mel)
+                base_mels.append(base_mel)
+
+                if self.n_mfcc:
+                    mfcc = proc_data['mfcc']
+                    base_mfcc = base_proc_data['mfcc']
+                    mfccs.append(mfcc)
+                    base_mfccs.append(base_mfcc)
+            elif self.channel_mode == 0:
+                proc_data = np.load(mel_path)
+                mel = proc_data['mel']
+                mels.append(mel)
+                base_mels.append(mel)
+
+                if self.n_mfcc:
+                    mfcc = proc_data['mfcc']
+                    mfccs.append(mfcc)
+                    base_mfccs.append(mfcc)
+            else:
+                base_proc_data = np.load(base_mel_path)
+                base_mel = base_proc_data['mel']
+                mels.append(base_mel)
+                base_mels.append(base_mel)
+
+                if self.n_mfcc:
+                    base_mfcc = base_proc_data['mfcc']
+                    mfccs.append(base_mfcc)
+                    base_mfccs.append(base_mfcc)
+
+        mels = np.array(mels, dtype=np.float32)
+        base_mels = np.array(base_mels, dtype=np.float32)
+        mfccs = np.array(mfccs, dtype=np.float32)
+        base_mfccs = np.array(base_mfccs, dtype=np.float32)
+
+        return [mels, base_mels, mfccs, base_mfccs]
 
 
 class RNNDataGenerator(Sequence):

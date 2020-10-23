@@ -12,7 +12,7 @@ from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, PARAM_TO_EFFECT
 from models import build_effect_model, baseline_cnn_2x
 from training_util import TestDataGenerator, DataGenerator, XYMetaData, \
-    EFFECT_TO_Y_PARAMS
+    EFFECT_TO_Y_PARAMS, FastDataGenerator
 from util import get_effect_names
 
 logging.basicConfig()
@@ -68,6 +68,7 @@ def train_model_gen(model: Model,
                     model_name: str,
                     epochs: int = 100,
                     patience: int = 8,
+                    min_delta: float = 0.0001,
                     output_dir_path: str = OUT_DIR,
                     use_multiprocessing: bool = True,
                     workers: int = 8) -> None:
@@ -77,7 +78,7 @@ def train_model_gen(model: Model,
         f'{model_name}__best.h5'
     )
     es = EarlyStopping(monitor='val_loss',
-                       min_delta=0,
+                       min_delta=min_delta,
                        patience=patience,
                        verbose=1)
     cp = ModelCheckpoint(save_path,
@@ -277,6 +278,7 @@ if __name__ == '__main__':
     val_split = 0.10
     test_split = 0.05
     patience = 8
+    min_delta = 0.0001
     used_cached_x_ids = True
     max_n = -1
     channel_mode = 1
@@ -291,7 +293,6 @@ if __name__ == '__main__':
 
     # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
     model_name = f'seq_5_v3__mfcc_30__{presets_cat}__{effect}__{architecture.__name__}__cm_{channel_mode}'
-    # model_name = f'seq_5_v3__proc__{presets_cat}__{effect}__{architecture.__name__}__cm_{channel_mode}'
     log.info(f'model_name = {model_name}')
 
     datasets_dir = DATASETS_DIR
@@ -322,14 +323,14 @@ if __name__ == '__main__':
     # print('done!')
     # exit()
 
-    train_gen = DataGenerator(train_x_ids,
-                              x_y_metadata,
-                              batch_size=batch_size,
-                              channel_mode=channel_mode)
-    val_gen = DataGenerator(val_x_ids,
-                            x_y_metadata,
-                            batch_size=batch_size,
-                            channel_mode=channel_mode)
+    train_gen = FastDataGenerator(train_x_ids,
+                                  x_y_metadata,
+                                  batch_size=batch_size,
+                                  channel_mode=channel_mode)
+    val_gen = FastDataGenerator(val_x_ids,
+                                x_y_metadata,
+                                batch_size=batch_size,
+                                channel_mode=channel_mode)
 
     model = build_effect_model(x_y_metadata.in_x,
                                x_y_metadata.in_y,
@@ -355,5 +356,6 @@ if __name__ == '__main__':
                     model_name,
                     epochs=epochs,
                     patience=patience,
+                    min_delta=min_delta,
                     use_multiprocessing=use_multiprocessing,
                     workers=workers)

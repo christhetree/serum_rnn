@@ -260,6 +260,11 @@
 # n_fft 1024, hop_length 256
 # epoch 53  loss: 0.0139 - mae: 0.0924 - val_loss: 0.0104 - val_mae: 0.0772
 
+# mfcc 30
+# epoch  3  loss: 0.0212 - mae: 0.1111 - val_loss: 0.0170 - val_mae: 0.0971 ...
+# epoch 50  loss: 0.0093 - mae: 0.0754 - val_loss: 0.0068 - val_mae: 0.0620 ...
+# epoch 87  loss: 0.0085 - mae: 0.0721 - val_loss: 0.0059 - val_mae: 0.0579
+
 # compressor, adv shapes, baseline cnn 2x
 # epoch 32  loss: 0.0105 - mae: 0.0801 - val_loss: 0.0075 - val_mae: 0.0658 ...
 # epoch 44  loss: 0.0100 - mae: 0.0783 - val_loss: 0.0070 - val_mae: 0.0637
@@ -284,7 +289,7 @@
 # epoch 38  loss: 0.1144 - dist_mode_loss: 0.0759 - cont_output_loss: 0.0386 - dist_mode_acc: 0.9755 - cont_output_mae: 0.1610
 # val_loss: 0.0781 - val_dist_mode_loss: 0.0514 - val_cont_output_loss: 0.0266 - val_dist_mode_acc: 0.9820 - val_cont_output_mae: 0.1339
 
-# mfcc 30
+# n_mfcc 30
 # epoch 48  loss: 0.1033 - dist_mode_loss: 0.0650 - cont_output_loss: 0.0383 - dist_mode_acc: 0.9799 - cont_output_mae: 0.1603
 # val_loss: 0.0734 - val_dist_mode_loss: 0.0438 - val_cont_output_loss: 0.0296 - val_dist_mode_acc: 0.9850 - val_cont_output_mae: 0.1422
 
@@ -319,6 +324,9 @@
 # epoch 64  loss: 0.0120 - mae: 0.0839 - val_loss: 0.0099 - val_mae: 0.0735
 # epoch 78  loss: 0.0117 - mae: 0.0830 - val_loss: 0.0096 - val_mae: 0.0725
 
+# mfcc 30
+# epoch 44  loss: 0.0095 - mae: 0.0746 - val_loss: 0.0074 - val_mae: 0.0626
+
 # eq, adv shapes, baseline cnn 2x
 # epoch 24  loss: 0.0121 - mae: 0.0838 - val_loss: 0.0098 - val_mae: 0.0724 ...
 # epoch 39  loss: 0.0109 - mae: 0.0804 - val_loss: 0.0086 - val_mae: 0.0683
@@ -337,6 +345,7 @@
 
 # mfcc 30
 # epoch 37  loss: 0.0085 - mae: 0.0718 - val_loss: 0.0052 - val_mae: 0.0532 ...
+# epoch 76  loss: 0.0076 - mae: 0.0680 - val_loss: 0.0042 - val_mae: 0.0476
 
 # only mfcc 30
 # epoch 49  loss: 0.0116 - mae: 0.0839 - val_loss: 0.0086 - val_mae: 0.0683 ...
@@ -349,6 +358,10 @@
 
 # reverb-hall, basic shapes, baseline cnn 2x
 # epoch 13  loss: 0.0059 - mae: 0.0586 - val_loss: 0.0034 - val_mae: 0.0427
+
+# mfcc 30
+# epoch 10  loss: 0.0052 - mae: 0.0551 - val_loss: 0.0028 - val_mae: 0.0393 ...
+
 # reverb-hall, adv shapes, baseline cnn 2x
 # epoch 82  loss: 0.0094 - mae: 0.0747 - val_loss: 0.0074 - val_mae: 0.0642
 # reverb-hall, temporal, baseline cnn 2x
