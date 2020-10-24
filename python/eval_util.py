@@ -12,7 +12,7 @@ from tensorflow.keras.models import load_model
 
 from audio_rendering import PatchGenerator
 from effects import get_effect, PARAM_TO_DESC, DESC_TO_PARAM, PARAM_TO_EFFECT
-from models import baseline_cnn_2x
+from models_effect import baseline_cnn_2x
 from serum_util import set_preset
 from training_rnn import EFFECT_TO_IDX_MAPPING
 from util import parse_save_name

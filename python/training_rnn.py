@@ -9,8 +9,10 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tqdm import tqdm
 
 from config import OUT_DIR, DATASETS_DIR
-from models import baseline_effect_rnn, baseline_cnn
-from training_util import RNNDataGenerator, EFFECT_TO_IDX_MAPPING
+from models_next_effect import next_effect_rnn, next_effect_seq_only_rnn, \
+    all_effects_cnn
+from training_util import RNNDataGenerator, EFFECT_TO_IDX_MAPPING, \
+    EffectSeqOnlyRNNDataGenerator, AllEffectsCNNDataGenerator
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -31,6 +33,7 @@ def train_model_gen(model: Model,
                     model_name: str,
                     epochs: int = 100,
                     patience: int = 8,
+                    min_delta: float = 0.0001,
                     output_dir_path: str = OUT_DIR,
                     use_multiprocessing: bool = True,
                     workers: int = 8) -> None:
@@ -40,7 +43,7 @@ def train_model_gen(model: Model,
         f'{model_name}__best.h5'
     )
     es = EarlyStopping(monitor='val_loss',
-                       min_delta=0,
+                       min_delta=min_delta,
                        patience=patience,
                        verbose=1)
     cp = ModelCheckpoint(save_path,
@@ -110,19 +113,32 @@ def get_x_ids(data_dir: str,
 if __name__ == '__main__':
     in_x = 128
     in_y = 88
+    n_mfcc = 30
     n_channels = 2
     n_effects = len(EFFECT_TO_IDX_MAPPING)
 
-    cnn_architecture = baseline_cnn
-    # cnn_architecture = baseline_cnn_2x
-    # cnn_architecture = exposure_cnn
-    # cnn_architecture = baseline_lstm
+    architecture = next_effect_rnn
+    # architecture = next_effect_seq_only_rnn
+    # architecture = all_effects_cnn
 
-    batch_size = 32
+    if architecture == next_effect_rnn:
+        batch_size = 32
+        loss = 'sparse_categorical_crossentropy'
+        data_gen = RNNDataGenerator
+    elif architecture == next_effect_seq_only_rnn:
+        batch_size = 32
+        loss = 'sparse_categorical_crossentropy'
+        data_gen = EffectSeqOnlyRNNDataGenerator
+    else:
+        batch_size = 32
+        loss = 'binary_crossentropy'
+        data_gen = AllEffectsCNNDataGenerator
+
     epochs = 100
     val_split = 0.10
     test_split = 0.05
     patience = 8
+    min_delta = 0.0001
     used_cached_x_ids = True
     max_n = -1
     # use_multiprocessing = False
@@ -134,50 +150,50 @@ if __name__ == '__main__':
     # presets_cat = 'adv_shapes'
     # presets_cat = 'temporal'
 
-    # model_name = f'testing__rnn'
-    model_name = f'seq_5_v3__mfcc_30__{presets_cat}__rnn__{cnn_architecture.__name__}'
+    # model_name = f'seq_5_v3_local__mfcc_30__{presets_cat}__rnn__{architecture.__name__}'
+    model_name = f'seq_5_v3__mfcc_30__{presets_cat}__rnn__{architecture.__name__}'
+    log.info(f'model_name = {model_name}')
 
     datasets_dir = DATASETS_DIR
-    # data_dir = os.path.join(datasets_dir, f'testing__rnn')
+    # data_dir = os.path.join(datasets_dir, f'seq_5_v3_local__proc__{presets_cat}__rnn')
     data_dir = os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}__rnn')
     log.info(f'data_dir = {data_dir}')
 
     train_x_ids, val_x_ids, test_x_ids = get_x_ids(data_dir,
                                                    val_split=val_split,
                                                    test_split=test_split,
-                                                   max_n=max_n)
+                                                   max_n=max_n,
+                                                   use_cached=used_cached_x_ids)
     log.info(f'train_x_ids length = {len(train_x_ids)}')
     log.info(f'val_x_ids length = {len(val_x_ids)}')
     log.info(f'test_x_ids length = {len(test_x_ids)}')
     log.info(f'batch_size = {batch_size}')
+    # exit()
 
-    train_gen = RNNDataGenerator(train_x_ids,
-                                 in_x,
-                                 in_y,
-                                 n_effects,
-                                 effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
-                                 batch_size=batch_size)
-    val_gen = RNNDataGenerator(val_x_ids,
-                               in_x,
-                               in_y,
-                               n_effects,
-                               effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
-                               batch_size=batch_size)
+    train_gen = data_gen(train_x_ids,
+                         n_effects,
+                         effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
+                         batch_size=batch_size)
+    val_gen = data_gen(val_x_ids,
+                       n_effects,
+                       effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
+                       batch_size=batch_size)
 
-    model = baseline_effect_rnn(in_x,
-                                in_y,
-                                n_channels,
-                                n_effects,
-                                cnn_architecture=cnn_architecture)
+    model = architecture(in_x=in_x,
+                         in_y=in_y,
+                         n_mfcc=n_mfcc,
+                         n_channels=n_channels,
+                         n_effects=n_effects)
+    model.summary()
 
     if load_prev_model:
         log.info('Loading previous best model.')
         model.load_weights(os.path.join(OUT_DIR, f'{model_name}__best.h5'))
 
+    log.info(f'loss = {loss}')
     model.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
+                  loss=loss,
                   metrics='acc')
-    model.summary()
 
     train_model_gen(model,
                     train_gen,
@@ -185,5 +201,6 @@ if __name__ == '__main__':
                     model_name,
                     epochs=epochs,
                     patience=patience,
+                    min_delta=min_delta,
                     use_multiprocessing=use_multiprocessing,
                     workers=workers)

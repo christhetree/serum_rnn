@@ -19,7 +19,10 @@ def load_preset(engine: rm.RenderEngine,
     engine.load_preset(preset_path)
 
     if render_once:
-        engine.render_patch(60, 127, 1.0, 3.0, False)
+        engine.render_patch(48, 127, 2.0, 4.0, False)
+        engine.get_audio_frames()
+        engine.render_patch(48, 127, 2.0, 4.0, False)
+        engine.get_audio_frames()
 
 
 def setup_serum(preset_path: str = None,

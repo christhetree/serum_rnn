@@ -268,6 +268,10 @@
 # compressor, adv shapes, baseline cnn 2x
 # epoch 32  loss: 0.0105 - mae: 0.0801 - val_loss: 0.0075 - val_mae: 0.0658 ...
 # epoch 44  loss: 0.0100 - mae: 0.0783 - val_loss: 0.0070 - val_mae: 0.0637
+
+# mfcc 30
+# epoch 53  loss: 0.0070 - mae: 0.0658 - val_loss: 0.0044 - val_mae: 0.0510
+
 # compressor, temporal, baseline cnn 2x
 # epoch 18  loss: 0.0113 - mae: 0.0832 - val_loss: 0.0082 - val_mae: 0.0689 ...
 # epoch 71  loss: 0.0090 - mae: 0.0750 - val_loss: 0.0057 - val_mae: 0.0585
@@ -293,6 +297,14 @@
 # epoch 48  loss: 0.1033 - dist_mode_loss: 0.0650 - cont_output_loss: 0.0383 - dist_mode_acc: 0.9799 - cont_output_mae: 0.1603
 # val_loss: 0.0734 - val_dist_mode_loss: 0.0438 - val_cont_output_loss: 0.0296 - val_dist_mode_acc: 0.9850 - val_cont_output_mae: 0.1422
 
+# mfcc 30
+# epoch  5  loss: 0.2878 - dist_mode_loss: 0.2518 - cont_output_loss: 0.0360 - dist_mode_acc: 0.9032 - cont_output_mae: 0.1570
+# val_loss: 0.2171 - val_dist_mode_loss: 0.1884 - val_cont_output_loss: 0.0287 - val_dist_mode_acc: 0.9266 - val_cont_output_mae: 0.1393 ...
+# epoch 14  loss: 0.1509 - dist_mode_loss: 0.1152 - cont_output_loss: 0.0357 - dist_mode_acc: 0.9602 - cont_output_mae: 0.1553
+# val_loss: 0.1140 - val_dist_mode_loss: 0.0835 - val_cont_output_loss: 0.0305 - val_dist_mode_acc: 0.9696 - val_cont_output_mae: 0.1452 ...
+# epoch 34  loss: 0.1102 - dist_mode_loss: 0.0729 - cont_output_loss: 0.0373 - dist_mode_acc: 0.9765 - cont_output_mae: 0.1582
+# val_loss: 0.0806 - val_dist_mode_loss: 0.0530 - val_cont_output_loss: 0.0276 - val_dist_mode_acc: 0.9824 - val_cont_output_mae: 0.1365 ...
+
 # only mfcc 30
 # epoch 48  loss: 0.1867 - dist_mode_loss: 0.1423 - cont_output_loss: 0.0443 - dist_mode_acc: 0.9527 - cont_output_mae: 0.1762
 # val_loss: 0.1449 - val_dist_mode_loss: 0.1083 - val_cont_output_loss: 0.0366 - val_dist_mode_acc: 0.9624 - val_cont_output_mae: 0.1632 ...
@@ -306,6 +318,11 @@
 # distortion, adv shapes, baseline cnn 2x
 # epoch 48  loss: 0.2018 - dist_mode_loss: 0.1614 - cont_output_loss: 0.0404 - dist_mode_acc: 0.9488 - cont_output_mae: 0.1657
 # val_loss: 0.1935 - val_dist_mode_loss: 0.1587 - val_cont_output_loss: 0.0348 - val_dist_mode_acc: 0.9467 - val_cont_output_mae: 0.1553
+
+# mfcc 30
+# epoch 27  loss: 0.1552 - dist_mode_loss: 0.1155 - cont_output_loss: 0.0397 - dist_mode_acc: 0.9651 - cont_output_mae: 0.1648
+# val_loss: 0.1331 - val_dist_mode_loss: 0.1029 - val_cont_output_loss: 0.0303 - val_dist_mode_acc: 0.9678 - val_cont_output_mae: 0.1459
+
 # distortion, temporal, baseline cnn 2x
 # epoch 13  loss: 0.2067 - dist_mode_loss: 0.1719 - cont_output_loss: 0.0348 - dist_mode_acc: 0.9376 - cont_output_mae: 0.1538
 # val_loss: 0.1755 - val_dist_mode_loss: 0.1486 - val_cont_output_loss: 0.0268 - val_dist_mode_acc: 0.9436 - val_cont_output_mae: 0.1345 ...
@@ -361,6 +378,7 @@
 
 # mfcc 30
 # epoch 10  loss: 0.0052 - mae: 0.0551 - val_loss: 0.0028 - val_mae: 0.0393 ...
+# epoch 32  loss: 0.0042 - mae: 0.0500 - val_loss: 0.0020 - val_mae: 0.0339
 
 # reverb-hall, adv shapes, baseline cnn 2x
 # epoch 82  loss: 0.0094 - mae: 0.0747 - val_loss: 0.0074 - val_mae: 0.0642

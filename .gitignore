@@ -267,9 +267,8 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 # User added
-data/audio_render_test/
+data/training_seq_5_v3_local/
 data/audio_test_data/
-data/training_eq_l_local/
 data/vst/
 data/datasets/
 data/presets/sample_lib/

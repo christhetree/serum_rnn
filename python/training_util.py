@@ -182,7 +182,7 @@ class DataGenerator(Sequence):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.channel_mode = channel_mode
-        self.y_id_to_y_data = {}
+        # self.y_id_to_y_data = {}
 
     def __len__(self) -> int:
         return int(np.floor(len(self.x_ids) / self.batch_size))
@@ -264,12 +264,14 @@ class DataGenerator(Sequence):
         for idx, (x_id, _, _) in enumerate(batch_x_ids):
             y_id = f'{x_id}__y_{self.y_params_str}.npz'
 
-            if y_id in self.y_id_to_y_data:
-                y_data = self.y_id_to_y_data[y_id]
-            else:
-                with np.load(os.path.join(self.y_dir, y_id)) as npz_data:
-                    y_data = {k: v.copy() for k, v in npz_data.items()}
-                self.y_id_to_y_data[y_id] = y_data
+            y_data = np.load(os.path.join(self.y_dir, y_id))
+
+            # if y_id in self.y_id_to_y_data:
+            #     y_data = self.y_id_to_y_data[y_id]
+            # else:
+            #     with np.load(os.path.join(self.y_dir, y_id)) as npz_data:
+            #         y_data = {k: v.copy() for k, v in npz_data.items()}
+            #     self.y_id_to_y_data[y_id] = y_data
 
             if self.n_bin:
                 y_bin[idx] = y_data['binary']
@@ -350,11 +352,9 @@ class FastDataGenerator(DataGenerator):
 class RNNDataGenerator(Sequence):
     def __init__(self,
                  x_ids: List[Tuple[List[str], List[str]]],
-                 in_x: int,
-                 in_y: int,
                  n_effects: int,
                  effect_name_to_idx: Dict[str, int],
-                 batch_size: int = 128,
+                 batch_size: int = 32,
                  shuffle: bool = True) -> None:
         assert len(x_ids) >= batch_size
 
@@ -362,8 +362,6 @@ class RNNDataGenerator(Sequence):
             np.random.shuffle(x_ids)
 
         self.x_ids = x_ids
-        self.in_x = in_x
-        self.in_y = in_y
         self.n_effects = n_effects
         self.effect_name_to_idx = effect_name_to_idx
         self.batch_size = batch_size
@@ -372,7 +370,7 @@ class RNNDataGenerator(Sequence):
     def __len__(self) -> int:
         return int(np.floor(len(self.x_ids) / self.batch_size))
 
-    def __getitem__(self, idx: int) -> ((np.ndarray, np.ndarray), np.ndarray):
+    def __getitem__(self, idx: int) -> (List[np.ndarray], np.ndarray):
         start_idx = idx * self.batch_size
         end_idx = (idx + 1) * self.batch_size
         batch_x_ids = self.x_ids[start_idx:end_idx]
@@ -383,16 +381,25 @@ class RNNDataGenerator(Sequence):
     def _create_x_batch(
             self,
             batch_x_ids: List[Tuple[List[str], List[str]]]
-    ) -> (np.ndarray, np.ndarray):
+    ) -> List[np.ndarray]:
         mel_seqs = []
+        mfcc_seqs = []
         effect_seqs = []
         for mel_path_seq, effect_names in batch_x_ids:
-            target_mel = np.load(mel_path_seq[-1])['mel']
+            target_npz_data = np.load(mel_path_seq[-1])
+            target_mel = target_npz_data['mel']
+            target_mfcc = target_npz_data['mfcc']
             mel_seq = []
+            mfcc_seq = []
             for mel_path in mel_path_seq[:-1]:
-                mel = np.load(mel_path)['mel']
+                npz_data = np.load(mel_path)
+                mel = npz_data['mel']
+                mfcc = npz_data['mfcc']
                 mel_seq.append(np.stack([target_mel, mel], axis=-1))
+                mfcc_seq.append(np.stack([target_mfcc, mfcc], axis=-1))
+
             mel_seqs.append(mel_seq)
+            mfcc_seqs.append(mfcc_seq)
 
             effect_seq = []
             for effect_name in effect_names[:-1]:
@@ -406,11 +413,15 @@ class RNNDataGenerator(Sequence):
                                         value=0.0,
                                         padding='post',
                                         dtype='float32')
+        padded_mfcc_seqs = pad_sequences(mfcc_seqs,
+                                         value=0.0,
+                                         padding='post',
+                                         dtype='float32')
         padded_effect_seqs = pad_sequences(effect_seqs,
                                            value=0.0,
                                            padding='post',
                                            dtype='float32')
-        return padded_mel_seqs, padded_effect_seqs
+        return [padded_mel_seqs, padded_mfcc_seqs, padded_effect_seqs]
 
     def _create_y_batch(
             self, batch_x_ids: List[Tuple[List[str], List[str]]]) -> np.ndarray:
@@ -424,3 +435,77 @@ class RNNDataGenerator(Sequence):
     def on_epoch_end(self) -> None:
         if self.shuffle:
             np.random.shuffle(self.x_ids)
+
+
+class EffectSeqOnlyRNNDataGenerator(RNNDataGenerator):
+    def _create_x_batch(
+            self,
+            batch_x_ids: List[Tuple[List[str], List[str]]]
+    ) -> List[np.ndarray]:
+        mels = []
+        mfccs = []
+        effect_seqs = []
+        for mel_path_seq, effect_names in batch_x_ids:
+            target_npz_data = np.load(mel_path_seq[-1])
+            target_mel = target_npz_data['mel']
+            target_mfcc = target_npz_data['mfcc']
+
+            init_npz_data = np.load(mel_path_seq[0])
+            init_mel = init_npz_data['mel']
+            init_mfcc = init_npz_data['mfcc']
+
+            mels.append(np.stack([target_mel, init_mel], axis=-1))
+            mfccs.append(np.stack([target_mfcc, init_mfcc], axis=-1))
+
+            effect_seq = []
+            for effect_name in effect_names[:-1]:
+                one_hot = np.zeros((self.n_effects + 1,), dtype=np.float32)
+                effect_idx = self.effect_name_to_idx.get(effect_name, -1)
+                one_hot[effect_idx] = 1.0
+                effect_seq.append(one_hot)
+            effect_seqs.append(effect_seq)
+
+        mels = np.array(mels, dtype=np.float32)
+        mfccs = np.array(mfccs, dtype=np.float32)
+        padded_effect_seqs = pad_sequences(effect_seqs,
+                                           value=0.0,
+                                           padding='post',
+                                           dtype='float32')
+        return [mels, mfccs, padded_effect_seqs]
+
+
+class AllEffectsCNNDataGenerator(RNNDataGenerator):
+    def _create_x_batch(
+            self,
+            batch_x_ids: List[Tuple[List[str], List[str]]]
+    ) -> List[np.ndarray]:
+        mels = []
+        mfccs = []
+        for mel_path_seq, _ in batch_x_ids:
+            target_npz_data = np.load(mel_path_seq[-1])
+            target_mel = target_npz_data['mel']
+            target_mfcc = target_npz_data['mfcc']
+
+            init_npz_data = np.load(mel_path_seq[0])
+            init_mel = init_npz_data['mel']
+            init_mfcc = init_npz_data['mfcc']
+
+            mels.append(np.stack([target_mel, init_mel], axis=-1))
+            mfccs.append(np.stack([target_mfcc, init_mfcc], axis=-1))
+
+        mels = np.array(mels, dtype=np.float32)
+        mfccs = np.array(mfccs, dtype=np.float32)
+        return [mels, mfccs]
+
+    def _create_y_batch(
+            self, batch_x_ids: List[Tuple[List[str], List[str]]]) -> np.ndarray:
+        y = []
+        for _, effect_names in batch_x_ids:
+            y_row = np.zeros((self.n_effects,), dtype=np.float32)
+            for effect_name in effect_names[1:]:
+                effect_idx = self.effect_name_to_idx[effect_name]
+                y_row[effect_idx] = 1.0
+            y.append(y_row)
+
+        y = np.array(y, dtype=np.float32)
+        return y

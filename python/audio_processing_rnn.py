@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from audio_processing_util import ProcessConfig, get_base_effect_info, \
     generate_base_render_hash, create_save_name
-from config import DATASETS_DIR, CONFIGS_DIR
+from config import DATASETS_DIR, CONFIGS_DIR, DATA_DIR
 from util import parse_save_name, generate_exclude_descs
 
 logging.basicConfig()
@@ -28,7 +28,7 @@ def create_sequence(orig_render_name: str,
     render_name_seq = [orig_render_name]
     orig_mel_path = os.path.join(preset_dir,
                                  orig_effect_dir_name,
-                                 'processing',
+                                 'processing',  # TODO
                                  mels_dir_name,
                                  orig_npz_name)
     assert os.path.exists(orig_mel_path)
@@ -52,7 +52,7 @@ def create_sequence(orig_render_name: str,
 
         base_mel_path = os.path.join(preset_dir,
                                      base_effect_dir_name,
-                                     'processing',
+                                     'processing',  # TODO
                                      mels_dir_name,
                                      base_npz_name)
         assert os.path.exists(base_mel_path)
@@ -174,7 +174,6 @@ if __name__ == '__main__':
 
     all_effects = {'compressor', 'distortion', 'eq', 'phaser', 'reverb-hall'}
 
-    # presets = ['ld_postmodern_talking_[fp]']
     presets_cat = 'basic_shapes'
     presets = ['sine', 'triangle', 'saw', 'square']
     # presets_cat = 'adv_shapes'
@@ -187,11 +186,11 @@ if __name__ == '__main__':
 
     datasets_dir = DATASETS_DIR
 
-    # renders_dir = os.path.join(renders_dir, 'training_eq_l_local')
+    # renders_dir = os.path.join(renders_dir, 'training_seq_5_v3_local')
     renders_dir = os.path.join(renders_dir, 'training_seq_5_v3')
 
-    # save_name = f'testing__rnn'
-    save_name = f'seq_5_v3__{presets_cat}__rnn'
+    # save_name = f'seq_5_v3_local__proc__{presets_cat}__rnn'
+    save_name = f'seq_5_v3__proc__{presets_cat}__rnn'
 
     save_dir = os.path.join(datasets_dir, save_name)
 
@@ -206,5 +205,3 @@ if __name__ == '__main__':
                                            save_dir,
                                            all_effects,
                                            gran=100)
-
-    exit()

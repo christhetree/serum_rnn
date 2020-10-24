@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, PARAM_TO_EFFECT
-from models import build_effect_model, baseline_cnn_2x
+from models_effect import build_effect_model, baseline_cnn_2x
 from training_util import TestDataGenerator, DataGenerator, XYMetaData, \
     EFFECT_TO_Y_PARAMS, FastDataGenerator
 from util import get_effect_names
@@ -267,11 +267,7 @@ if __name__ == '__main__':
     # effect = 'reverb-hall'
     params = EFFECT_TO_Y_PARAMS[effect]
 
-    # architecture = baseline_cnn
     architecture = baseline_cnn_2x
-    # architecture = baseline_cnn_shallow
-    # architecture = exposure_cnn
-    # architecture = baseline_lstm
 
     batch_size = 128
     epochs = 100

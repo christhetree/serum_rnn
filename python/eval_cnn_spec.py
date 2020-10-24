@@ -13,7 +13,7 @@ from config import PRESETS_DIR, MODELS_DIR, DATASETS_DIR, CONFIGS_DIR, OUT_DIR
 from eval_ensemble import set_default_and_constant_params, \
     get_patch_from_effect_cnn, render_name_to_rc_effects
 from metrics import calc_lsd, calc_mfcc_metric
-from models import baseline_cnn_2x
+from models_effect import baseline_cnn_2x
 from serum_util import setup_serum
 
 logging.basicConfig()

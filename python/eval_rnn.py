@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from config import DATASETS_DIR, MODELS_DIR
 from eval_util import plot_mel_seq
-from models import baseline_cnn
+from models_effect import baseline_cnn
 from training_rnn import EFFECT_TO_IDX_MAPPING, get_x_ids, RNNDataGenerator
 
 logging.basicConfig()
