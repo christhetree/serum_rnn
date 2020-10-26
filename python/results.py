@@ -304,6 +304,8 @@
 # val_loss: 0.1140 - val_dist_mode_loss: 0.0835 - val_cont_output_loss: 0.0305 - val_dist_mode_acc: 0.9696 - val_cont_output_mae: 0.1452 ...
 # epoch 34  loss: 0.1102 - dist_mode_loss: 0.0729 - cont_output_loss: 0.0373 - dist_mode_acc: 0.9765 - cont_output_mae: 0.1582
 # val_loss: 0.0806 - val_dist_mode_loss: 0.0530 - val_cont_output_loss: 0.0276 - val_dist_mode_acc: 0.9824 - val_cont_output_mae: 0.1365 ...
+# epoch 42  loss: 0.1056 - dist_mode_loss: 0.0677 - cont_output_loss: 0.0378 - dist_mode_acc: 0.9787 - cont_output_mae: 0.1593
+# val_loss: 0.0734 - val_dist_mode_loss: 0.0471 - val_cont_output_loss: 0.0263 - val_dist_mode_acc: 0.9845 - val_cont_output_mae: 0.1329
 
 # only mfcc 30
 # epoch 48  loss: 0.1867 - dist_mode_loss: 0.1423 - cont_output_loss: 0.0443 - dist_mode_acc: 0.9527 - cont_output_mae: 0.1762
@@ -320,8 +322,8 @@
 # val_loss: 0.1935 - val_dist_mode_loss: 0.1587 - val_cont_output_loss: 0.0348 - val_dist_mode_acc: 0.9467 - val_cont_output_mae: 0.1553
 
 # mfcc 30
-# epoch 27  loss: 0.1552 - dist_mode_loss: 0.1155 - cont_output_loss: 0.0397 - dist_mode_acc: 0.9651 - cont_output_mae: 0.1648
-# val_loss: 0.1331 - val_dist_mode_loss: 0.1029 - val_cont_output_loss: 0.0303 - val_dist_mode_acc: 0.9678 - val_cont_output_mae: 0.1459
+# epoch 38  loss: 0.1420 - dist_mode_loss: 0.1007 - cont_output_loss: 0.0413 - dist_mode_acc: 0.9707 - cont_output_mae: 0.1679
+# val_loss: 0.1215 - val_dist_mode_loss: 0.0902 - val_cont_output_loss: 0.0312 - val_dist_mode_acc: 0.9727 - val_cont_output_mae: 0.1483
 
 # distortion, temporal, baseline cnn 2x
 # epoch 13  loss: 0.2067 - dist_mode_loss: 0.1719 - cont_output_loss: 0.0348 - dist_mode_acc: 0.9376 - cont_output_mae: 0.1538
@@ -347,6 +349,10 @@
 # eq, adv shapes, baseline cnn 2x
 # epoch 24  loss: 0.0121 - mae: 0.0838 - val_loss: 0.0098 - val_mae: 0.0724 ...
 # epoch 39  loss: 0.0109 - mae: 0.0804 - val_loss: 0.0086 - val_mae: 0.0683
+
+# mfcc 30
+# epoch 59  loss: 0.0067 - mae: 0.0641 - val_loss: 0.0046 - val_mae: 0.0505
+
 # eq, temporal, baseline cnn 2x
 # epoch 51  loss: 0.0109 - mae: 0.0805 - val_loss: 0.0085 - val_mae: 0.0683
 
@@ -369,6 +375,10 @@
 
 # phaser, adv shapes, baseline cnn 2x
 # epoch 32  loss: 0.0105 - mae: 0.0802 - val_loss: 0.0064 - val_mae: 0.0595
+
+# mfcc 30
+# epoch 58  loss: 0.0069 - mae: 0.0654 - val_loss: 0.0037 - val_mae: 0.0455
+
 # phaser, temporal, baseline cnn 2x
 # epoch 63  loss: 0.0104 - mae: 0.0801 - val_loss: 0.0066 - val_mae: 0.0611
 
@@ -382,6 +392,10 @@
 
 # reverb-hall, adv shapes, baseline cnn 2x
 # epoch 82  loss: 0.0094 - mae: 0.0747 - val_loss: 0.0074 - val_mae: 0.0642
+
+# mfcc 30
+# epoch 50  loss: 0.0065 - mae: 0.0626 - val_loss: 0.0051 - val_mae: 0.0519
+
 # reverb-hall, temporal, baseline cnn 2x
 # epoch 42  loss: 0.0078 - mae: 0.0679 - val_loss: 0.0055 - val_mae: 0.0552
 
@@ -394,6 +408,15 @@
 # no cnn
 # epoch 31  loss: 1.1545 - acc: 0.3430 - val_loss: 1.1498 - val_acc: 0.3426
 
+# mfcc 30, next_effect_rnn
+# epoch  6  loss: 0.0741 - acc: 0.9749 - val_loss: 0.0490 - val_acc: 0.9829
+
+# mfcc 30, next_effect_seq_only_rnn
+# epoch 12  loss: 0.1139 - acc: 0.9620 - val_loss: 0.0837 - val_acc: 0.9707
+
+# mfcc 30, all_effects_cnn
+# epoch 25  loss: 0.1380 - acc: 0.3322 - val_loss: 0.1291 - val_acc: 0.2870
+
 # rnn, adv shapes, baseline cnn
 # epoch  8  loss: 0.0559 - acc: 0.9815 - val_loss: 0.0403 - val_acc: 0.9858
 
@@ -402,11 +425,28 @@
 # no cnn
 # epoch 20  loss: 1.1553 - acc: 0.3421 - val_loss: 1.1507 - val_acc: 0.3434
 
+# mfcc 30, next_effect_rnn
+# epoch  5  loss: 0.0712 - acc: 0.9760 - val_loss: 0.0454 - val_acc: 0.9861
+
+# mfcc 30, next_effect_seq_only_rnn
+# epoch 16  loss: 0.1161 - acc: 0.9617 - val_loss: 0.0877 - val_acc: 0.9689
+
+# mfcc 30, all_effects_cnn
+# epoch 18  loss: 0.1360 - acc: 0.4729 - val_loss: 0.1241 - val_acc: 0.4792
+
 # rnn, temporal, baseline cnn
 # epoch 10  loss: 0.0552 - acc: 0.9819 - val_loss: 0.0383 - val_acc: 0.9877
 
 # gru
 # epoch  8  loss: 0.0639 - acc: 0.9790 - val_loss: 0.0406 - val_acc: 0.9865
+
+# mfcc 30, next_effect_rnn
+
+
+# mfcc 30, next_effect_seq_only_rnn
+
+
+# mfcc 30, all_effects_cnn
 
 
 # workshop results
