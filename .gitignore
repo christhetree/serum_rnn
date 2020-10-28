@@ -269,6 +269,7 @@ fabric.properties
 # User added
 data/training_seq_5_v3_local/
 data/audio_test_data/
+data/eval_in/
 data/vst/
 data/datasets/
 data/presets/sample_lib/

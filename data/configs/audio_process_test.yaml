@@ -10,9 +10,9 @@ fmax: 16000
 db_ref: 1.0
 top_db: 80.0
 n_mfcc: 30
-calc_cent: True
-calc_bw: True
-calc_flat: True
+calc_cent: False
+calc_bw: False
+calc_flat: False
 
 use_hashes: True
 proc_dir_name: processing

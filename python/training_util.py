@@ -24,6 +24,7 @@ EFFECT_TO_IDX_MAPPING = {
     'phaser': 3,
     'reverb-hall': 4,
 }
+IDX_TO_EFFECT_MAPPING = {v: k for k, v in EFFECT_TO_IDX_MAPPING.items()}
 
 EFFECT_TO_Y_PARAMS = {
     'compressor': {270, 271, 272},
@@ -159,6 +160,7 @@ class DataGenerator(Sequence):
         assert len(x_ids) >= batch_size
 
         if shuffle:
+            log.info('Shuffling x_ids!')
             np.random.shuffle(x_ids)
 
         assert channel_mode == -1 or channel_mode == 0 or channel_mode == 1
@@ -293,6 +295,7 @@ class DataGenerator(Sequence):
 
     def on_epoch_end(self) -> None:
         if self.shuffle:
+            log.info('Shuffling x_ids!')
             np.random.shuffle(self.x_ids)
 
 
@@ -347,6 +350,35 @@ class FastDataGenerator(DataGenerator):
         base_mfccs = np.array(base_mfccs, dtype=np.float32)
 
         return [mels, base_mels, mfccs, base_mfccs]
+
+
+class DataExtractor(DataGenerator):
+    def __init__(self,
+                 x_ids: List[Tuple[str, str, str]],
+                 x_y_metadata: XYMetaData,
+                 batch_size: int = 1,
+                 shuffle: bool = True,
+                 channel_mode: int = 1) -> None:
+        assert batch_size == 1
+        assert shuffle
+        super().__init__(x_ids, x_y_metadata, batch_size, shuffle, channel_mode)
+
+    def _create_x_batch(
+            self,
+            batch_x_ids: List[Tuple[str, ...]]
+    ) -> Tuple[np.ndarray, np.ndarray, str, str, str]:
+        assert len(batch_x_ids) == 1
+        x = super()._create_x_batch(batch_x_ids)
+        mel_x = x[0][0]
+        mfcc_x = x[1][0]
+
+        x_id, mel_path, base_mel_path = batch_x_ids[0]
+        mel_info = np.load(mel_path)
+        base_mel_info = np.load(base_mel_path)
+        render_name = mel_info['render_name'].item()
+        base_render_name = base_mel_info['render_name'].item()
+        preset = x_id.split('__')[0]
+        return mel_x, mfcc_x, render_name, base_render_name, preset
 
 
 class RNNDataGenerator(Sequence):

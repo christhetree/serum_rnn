@@ -3,40 +3,37 @@ import os
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model
 
 from config import DATASETS_DIR, MODELS_DIR
-from models_effect import baseline_cnn_2x
+from models_effect import baseline_cnn_2x, build_effect_model
 from training import get_x_y_metadata, DataGenerator, get_x_ids
+from training_util import EFFECT_TO_Y_PARAMS
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
-tf.config.experimental.set_visible_devices([], 'GPU')
+GPU = 0
+physical_devices = tf.config.list_physical_devices('GPU')
+if physical_devices:
+    log.info(f'GPUs available: {physical_devices}')
+    tf.config.experimental.set_visible_devices(physical_devices[GPU], 'GPU')
+    # tf.config.experimental.set_visible_devices([], 'GPU')
 
 
 if __name__ == '__main__':
-    effect = 'compressor'
-    params = {270, 271, 272}
-    # effect = 'distortion'
-    # params = {97, 99}
-    # effect = 'eq'
-    # params = {89, 91, 93}
-    # effect = 'phaser'
-    # params = {112, 113, 114}
-    # effect = 'reverb-hall'
-    # params = {81, 84, 86}
-
-    # architecture = baseline_cnn
-    architecture = baseline_cnn_2x
-    # architecture = baseline_cnn_shallow
-    # architecture = exposure_cnn
-    # architecture = baseline_lstm
-
     presets_cat = 'basic_shapes'
     # presets_cat = 'adv_shapes'
     # presets_cat = 'temporal'
+
+    effect = 'compressor'
+    # effect = 'distortion'
+    # effect = 'eq'
+    # effect = 'phaser'
+    # effect = 'reverb-hall'
+    params = EFFECT_TO_Y_PARAMS[effect]
+
+    architecture = baseline_cnn_2x
 
     batch_size = 128
     channel_mode = 1
@@ -45,20 +42,21 @@ if __name__ == '__main__':
     workers = 8
     model_dir = MODELS_DIR
 
-    model_name = f'seq_5_v3__{presets_cat}__{effect}__{architecture.__name__}' \
-                 f'__cm_{channel_mode}__best.h5'
+    model_name = f'seq_5_v3__mfcc_30__{presets_cat}__{effect}__' \
+                 f'{architecture.__name__}__cm_{channel_mode}__best.h5'
+    log.info(f'model_name = {model_name}')
 
     datasets_dir = DATASETS_DIR
-    # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
-    data_dir = os.path.join(datasets_dir, f'seq_5_v3__{presets_cat}__{effect}')
-    model_path = os.path.join(model_dir, model_name)
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}'
+                                          f'__{effect}')
     log.info(f'data_dir = {data_dir}')
+
+    model_path = os.path.join(model_dir, model_name)
     log.info(f'model_path = {model_path}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
     _, _, test_x_ids = get_x_ids(data_dir)
-    # test_x_ids = test_x_ids[:256]
-    log.info(f'test_x_ids length = {len(test_x_ids)}')
+    log.info(f'batch_size = {batch_size}')
 
     test_gen = DataGenerator(test_x_ids,
                              x_y_metadata,
@@ -66,8 +64,21 @@ if __name__ == '__main__':
                              channel_mode=channel_mode,
                              shuffle=False)
 
-    model = load_model(model_path)
+    model = build_effect_model(x_y_metadata.in_x,
+                               x_y_metadata.in_y,
+                               n_mfcc=x_y_metadata.n_mfcc,
+                               architecture=architecture,
+                               n_bin=x_y_metadata.n_bin,
+                               n_cate=x_y_metadata.n_cate,
+                               cate_names=x_y_metadata.cate_names,
+                               n_cont=x_y_metadata.n_cont,
+                               use_fast_data_gen=False)
     model.summary()
+    model.load_weights(model_path)
+
+    model.compile(optimizer='adam',
+                  loss=x_y_metadata.y_losses,
+                  metrics=x_y_metadata.metrics)
 
     eval_results = model.evaluate(test_gen,
                                   use_multiprocessing=use_multiprocessing,
@@ -82,6 +93,7 @@ if __name__ == '__main__':
         pred = [pred]
 
     log.info(f'model_name = {model_name}')
+    log.info(f'test_x_ids length = {len(test_x_ids)}')
     log.info(f'eval_results = {eval_results}')
 
     if x_y_metadata.n_cont:

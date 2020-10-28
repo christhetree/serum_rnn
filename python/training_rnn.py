@@ -23,8 +23,6 @@ physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
     tf.config.experimental.set_visible_devices(physical_devices[GPU], 'GPU')
-    # tf.config.experimental.set_memory_growth(physical_devices[GPU],
-    #                                          enable=True)
 
 
 def train_model_gen(model: Model,
@@ -111,6 +109,10 @@ def get_x_ids(data_dir: str,
 
 
 if __name__ == '__main__':
+    presets_cat = 'basic_shapes'
+    # presets_cat = 'adv_shapes'
+    # presets_cat = 'temporal'
+
     in_x = 128
     in_y = 88
     n_mfcc = 30
@@ -124,14 +126,17 @@ if __name__ == '__main__':
     if architecture == next_effect_rnn:
         batch_size = 32
         loss = 'sparse_categorical_crossentropy'
+        metric = 'acc'
         data_gen = RNNDataGenerator
     elif architecture == next_effect_seq_only_rnn:
         batch_size = 32
         loss = 'sparse_categorical_crossentropy'
+        metric = 'acc'
         data_gen = EffectSeqOnlyRNNDataGenerator
     else:
         batch_size = 32
         loss = 'binary_crossentropy'
+        metric = 'binary_accuracy'
         data_gen = AllEffectsCNNDataGenerator
 
     epochs = 100
@@ -146,12 +151,9 @@ if __name__ == '__main__':
     workers = 8
     load_prev_model = False
 
-    presets_cat = 'basic_shapes'
-    # presets_cat = 'adv_shapes'
-    # presets_cat = 'temporal'
-
     # model_name = f'seq_5_v3_local__mfcc_30__{presets_cat}__rnn__{architecture.__name__}'
-    model_name = f'seq_5_v3__mfcc_30__{presets_cat}__rnn__{architecture.__name__}'
+    model_name = f'seq_5_v3__mfcc_30__{presets_cat}' \
+                 f'__rnn__{architecture.__name__}'
     log.info(f'model_name = {model_name}')
 
     datasets_dir = DATASETS_DIR
@@ -193,7 +195,7 @@ if __name__ == '__main__':
     log.info(f'loss = {loss}')
     model.compile(optimizer='adam',
                   loss=loss,
-                  metrics='acc')
+                  metrics=metric)
 
     train_model_gen(model,
                     train_gen,

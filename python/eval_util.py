@@ -3,33 +3,28 @@ import logging
 import os
 import random
 from collections import defaultdict
-from typing import List, Dict, Callable, Union
+from typing import List, Dict, Callable, Union, Optional
 
 import librenderman as rm
 import numpy as np
 from tensorflow.keras import Model
 from tensorflow.keras.models import load_model
 
+from audio_features import get_mel_spec, AudioFeatures
+from audio_processing_util import ProcessConfig
 from audio_rendering import PatchGenerator
+from audio_rendering_util import RenderConfig, render_patch
+from config import OUT_DIR
 from effects import get_effect, PARAM_TO_DESC, DESC_TO_PARAM, PARAM_TO_EFFECT
 from models_effect import baseline_cnn_2x
-from serum_util import set_preset
+from serum_util import set_preset, setup_serum
 from training_rnn import EFFECT_TO_IDX_MAPPING
+from training_util import EFFECT_TO_Y_PARAMS
 from util import parse_save_name
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
-
-# tf.config.experimental.set_visible_devices([], 'GPU')
-
-EFFECT_TO_Y_PARAMS = {
-    'compressor': {270, 271, 272},
-    'distortion': {97, 99},
-    'eq': {89, 91, 93},
-    'phaser': {112, 113, 114},
-    'reverb-hall': {81, 84, 86},
-}
 
 
 def load_effect_cnns(models_dir: str,
@@ -41,7 +36,6 @@ def load_effect_cnns(models_dir: str,
     for effect_name in EFFECT_TO_IDX_MAPPING:
         model_name = f'{model_prefix}__{effect_name}__{architecture.__name__}' \
                      f'__cm_{channel_mode}__best.h5'
-        # model_name = 'random_baseline_cnn_2x.h5'
         model_path = os.path.join(models_dir, model_name)
         log.info(f'Loading {model_name}')
         effect_cnn = load_model(model_path)
@@ -388,3 +382,56 @@ def crunch_eval_data(save_path: str):
             log.info(f'same_steps n={len(same_steps_s)}, mean d = {np.mean(same_steps_s):.4f}')
             log.info('')
         log.info('')
+
+
+def effect_cnn_audio_step(
+        preset_path: str,
+        step_rc_effects: List[Dict[str, Union[str, List[int]]]],
+        rc: RenderConfig,
+        pc: ProcessConfig,
+        engine: Optional[rm.RenderEngine] = None,
+        patch: Optional[Dict[int, float]] = None,
+        render_save_dir: Optional[str] = OUT_DIR,
+        render_save_name: Optional[str] = None
+) -> (rm.RenderEngine, np.ndarray, AudioFeatures):
+    if engine is None:
+        engine = setup_serum(preset_path, sr=rc.sr, render_once=True)
+    if patch is None:
+        patch = {}
+
+    set_default_and_constant_params(engine,
+                                    step_rc_effects,
+                                    rc.effects,
+                                    rc.gran)
+    audio = render_patch(engine,
+                         patch,
+                         rc,
+                         render_save_dir,
+                         render_save_name)
+    audio_features = get_mel_spec(audio=audio,
+                                  sr=pc.sr,
+                                  n_fft=pc.n_fft,
+                                  hop_length=pc.hop_length,
+                                  n_mels=pc.n_mels,
+                                  max_n_of_frames=pc.max_n_of_frames,
+                                  norm_audio=pc.norm_audio,
+                                  norm_mel=pc.norm_mel,
+                                  fmin=pc.fmin,
+                                  fmax=pc.fmax,
+                                  db_ref=pc.db_ref,
+                                  top_db=pc.top_db,
+                                  n_mfcc=pc.n_mfcc,
+                                  calc_cent=pc.calc_cent,
+                                  calc_bw=pc.calc_bw,
+                                  calc_flat=pc.calc_flat)
+
+    return engine, audio, audio_features
+
+
+def create_effect_cnn_x(target_af: AudioFeatures,
+                        base_af: AudioFeatures) -> List[np.ndarray]:
+    mel_x = np.stack([target_af.mel, base_af.mel], axis=-1)
+    mel_x = np.expand_dims(mel_x, axis=0)
+    mfcc_x = np.stack([target_af.mfcc, base_af.mfcc], axis=-1)
+    mfcc_x = np.expand_dims(mfcc_x, axis=0)
+    return [mel_x, mfcc_x]

@@ -11,8 +11,8 @@ from tqdm import tqdm
 from config import OUT_DIR, DATASETS_DIR
 from effects import DESC_TO_PARAM, PARAM_TO_EFFECT
 from models_effect import build_effect_model, baseline_cnn_2x
-from training_util import TestDataGenerator, DataGenerator, XYMetaData, \
-    EFFECT_TO_Y_PARAMS, FastDataGenerator
+from training_util import DataGenerator, XYMetaData, EFFECT_TO_Y_PARAMS, \
+    FastDataGenerator, DataExtractor
 from util import get_effect_names
 
 logging.basicConfig()
@@ -24,39 +24,46 @@ physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     log.info(f'GPUs available: {physical_devices}')
     tf.config.experimental.set_visible_devices(physical_devices[GPU], 'GPU')
-    # tf.config.experimental.set_memory_growth(physical_devices[GPU],
-    #                                          enable=True)
 
 
-def get_eval_cnn_spec(gen: TestDataGenerator,
+def extract_eval_data(gen: DataExtractor,
                       save_name: str,
                       max_n: int = 1000) -> None:
-    x_s = []
+    mels = []
+    mfccs = []
     render_names = []
     base_render_names = []
     presets = []
-    for (x, render_name, base_render_name, preset), y in tqdm(gen):
+
+    for (mel_x, mfcc_x, render_name, base_render_name, preset), y in tqdm(gen):
         if len(render_names) >= max_n:
             break
 
         effect_names = get_effect_names(render_name)
         base_effect_names = get_effect_names(base_render_name)
         if len(base_effect_names) + 1 == len(effect_names):
-            x_s.append(x)
+            mels.append(mel_x)
+            mfccs.append(mfcc_x)
             render_names.append(render_name)
             base_render_names.append(base_render_name)
             presets.append(preset)
 
-    assert len(x_s) == len(render_names) == len(base_render_names) == len(presets)
-    log.info(f'Length of x_s = {len(x_s)}')
+    assert len(mels) == len(mfccs) \
+           == len(render_names) \
+           == len(base_render_names) \
+           == len(presets)
+    log.info(f'Length of data = {len(render_names)}')
+
+    mels = np.array(mels, dtype=np.float32)
+    mfccs = np.array(mfccs, dtype=np.float32)
+    log.info(f'shape of mels = {mels.shape}')
+    log.info(f'shape of mfccs = {mfccs.shape}')
+
     log.info(f'Saving: {save_name}')
     save_path = os.path.join(OUT_DIR, save_name)
-    log.info('converting')
-    x_s = np.concatenate(x_s, axis=0)
-    log.info(x_s.shape)
-    log.info('converting done')
     np.savez(save_path,
-             x_s=x_s,
+             mels=mels,
+             mfccs=mfccs,
              render_names=render_names,
              base_render_names=base_render_names,
              presets=presets)
@@ -260,6 +267,10 @@ def get_x_ids(data_dir: str,
 
 
 if __name__ == '__main__':
+    presets_cat = 'basic_shapes'
+    # presets_cat = 'adv_shapes'
+    # presets_cat = 'temporal'
+
     effect = 'compressor'
     # effect = 'distortion'
     # effect = 'eq'
@@ -283,17 +294,12 @@ if __name__ == '__main__':
     load_prev_model = False
     # load_prev_model = True
 
-    presets_cat = 'basic_shapes'
-    # presets_cat = 'adv_shapes'
-    # presets_cat = 'temporal'
-
-    # model_name = f'testing__{effect}__{architecture.__name__}__cm_{channel_mode}'
     model_name = f'seq_5_v3__mfcc_30__{presets_cat}__{effect}__{architecture.__name__}__cm_{channel_mode}'
     log.info(f'model_name = {model_name}')
 
     datasets_dir = DATASETS_DIR
-    # data_dir = os.path.join(datasets_dir, f'testing__{effect}')
-    data_dir = os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}__{effect}')
+    data_dir = os.path.join(datasets_dir, f'seq_5_v3__proc__{presets_cat}'
+                                          f'__{effect}')
     log.info(f'data_dir = {data_dir}')
 
     x_y_metadata = get_x_y_metadata(data_dir, params)
@@ -308,14 +314,13 @@ if __name__ == '__main__':
     log.info(f'batch_size = {batch_size}')
     # exit()
 
-    # test_x_ids = test_x_ids[:100]
-    # spec_gen = TestDataGenerator(test_x_ids,
-    #                              x_y_metadata,
-    #                              batch_size=1,
-    #                              channel_mode=1,
-    #                              shuffle=True)
-    # save_name = f'{model_name}__eval_spec_data.npz'
-    # get_eval_cnn_spec(spec_gen, save_name)
+    # data_extractor = DataExtractor(test_x_ids,
+    #                                x_y_metadata,
+    #                                batch_size=1,
+    #                                channel_mode=1,
+    #                                shuffle=True)
+    # save_name = f'{model_name}__eval_in_data.npz'
+    # extract_eval_data(data_extractor, save_name)
     # print('done!')
     # exit()
 
@@ -335,7 +340,8 @@ if __name__ == '__main__':
                                n_bin=x_y_metadata.n_bin,
                                n_cate=x_y_metadata.n_cate,
                                cate_names=x_y_metadata.cate_names,
-                               n_cont=x_y_metadata.n_cont)
+                               n_cont=x_y_metadata.n_cont,
+                               use_fast_data_gen=True)
     model.summary()
 
     if load_prev_model:

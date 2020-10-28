@@ -21,7 +21,7 @@ def load_preset(engine: rm.RenderEngine,
     if render_once:
         engine.render_patch(48, 127, 2.0, 4.0, False)
         engine.get_audio_frames()
-        engine.render_patch(48, 127, 2.0, 4.0, False)
+        engine.render_patch(48, 127, 1.0, 1.0, False)
         engine.get_audio_frames()
 
 
