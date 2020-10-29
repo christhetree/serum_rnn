@@ -29,7 +29,7 @@ render_length: 1.0
 root_dir: /Volumes/samsung_t5/reverse_synthesis/training_eq_l
 sr: 44100
 vel: 127
-use_hashes: True
+use_hashes: False
 
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/sine.fxp
 #preset: /Users/christhetree/local_christhetree/audio_research/reverse_synthesis/data/presets/triangle.fxp

@@ -26,6 +26,8 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
+FIXED_EFFECT_SEQ = ['distortion', 'phaser', 'compressor', 'reverb-hall', 'eq']
+
 
 def load_effect_cnns(models_dir: str,
                      model_prefix: str,
@@ -89,7 +91,8 @@ def plot_mel_seq(mel_seq: np.ndarray,
 
 def update_patch(patch: Dict[int, float],
                  rc_effect: Dict[str, Union[str, List[int]]],
-                 gran: int) -> None:
+                 gran: int,
+                 verbose: bool = False) -> None:
     effect_name = rc_effect['name']
     effect = get_effect(effect_name)
 
@@ -108,8 +111,10 @@ def update_patch(patch: Dict[int, float],
             else:
                 n_categories = effect.categorical[param]
                 const_v = float(const / (n_categories - 1))
-            log.info(f'Overriding {effect_name} - {desc} with '
-                     f'constant: {const}')
+
+            if verbose:
+                log.info(f'Overriding {effect_name} - {desc} with '
+                         f'constant: {const}')
             patch[param] = const_v
 
 
@@ -117,7 +122,8 @@ def set_default_and_constant_params(
         engine: rm.RenderEngine,
         rc_effects: List[Dict[str, Union[str, List[int]]]],
         orig_rc_effects: List[Dict[str, Union[str, List[int]]]],
-        gran: int
+        gran: int,
+        verbose: bool = False
 ) -> None:
     orig_rc_effects = {e['name']: e for e in orig_rc_effects}
 
@@ -127,11 +133,15 @@ def set_default_and_constant_params(
         patch = effect.default.copy()
 
         if effect_name in orig_rc_effects:
-            update_patch(patch, orig_rc_effects[effect_name], gran=gran)
+            update_patch(patch,
+                         orig_rc_effects[effect_name],
+                         gran=gran,
+                         verbose=verbose)
 
         update_patch(patch, rc_effect, gran=gran)
 
-        log.info(f'Setting {effect_name} default and constant params.')
+        if verbose:
+            log.info(f'Setting {effect_name} default and constant params.')
         set_preset(engine, patch)
 
 

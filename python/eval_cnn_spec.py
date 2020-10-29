@@ -37,6 +37,7 @@ if __name__ == '__main__':
     params = EFFECT_TO_Y_PARAMS[effect]
 
     architecture = baseline_cnn_2x
+    metrics = [mse, mae, mfcc_dist, lsd]
 
     channel_mode = 1
     model_dir = MODELS_DIR
@@ -46,15 +47,20 @@ if __name__ == '__main__':
     log.info(f'model_name = {model_name}')
 
     eval_in_dir = os.path.join(DATA_DIR, 'eval_in')
-    data_path = os.path.join(eval_in_dir, f'{model_name}__eval_in_data.npz')
-    log.info(f'eval_in_data_path = {data_path}')
+    eval_in_path = os.path.join(eval_in_dir, f'{model_name}__eval_in_data.npz')
+    log.info(f'eval_in_data_path = {eval_in_path}')
 
-    data = np.load(data_path)
-    mels = data['mels']
-    mfccs = data['mfccs']
-    render_names = data['render_names']
-    base_render_names = data['base_render_names']
-    presets = data['presets']
+    eval_in_data = np.load(eval_in_path)
+    mels = eval_in_data['mels']
+    mfccs = eval_in_data['mfccs']
+    render_names = eval_in_data['render_names']
+    base_render_names = eval_in_data['base_render_names']
+    presets = eval_in_data['presets']
+
+    eval_out_dir = os.path.join(DATA_DIR, 'eval_out')
+    eval_save_name = f'{model_name}__eval_out_data.npz'
+    eval_save_path = os.path.join(eval_out_dir, eval_save_name)
+    log.info(f'eval_save_path = {eval_save_path}')
 
     model_path = os.path.join(model_dir, f'{model_name}__best.h5')
     log.info(f'model_path = {model_path}')
@@ -68,62 +74,57 @@ if __name__ == '__main__':
         render_config = yaml.full_load(config_f)
     rc = RenderConfig(**render_config)
     rc.use_hashes = False
+    rc.preset = None
 
     process_config_path = os.path.join(CONFIGS_DIR, 'audio_process_test.yaml')
     with open(process_config_path, 'r') as config_f:
         process_config = yaml.full_load(config_f)
     pc = ProcessConfig(**process_config)
 
-    eval_out_dir = os.path.join(DATA_DIR, 'eval_out')
-    eval_save_name = f'{model_name}__eval_out_data.npz'
-    eval_save_path = os.path.join(eval_out_dir, eval_save_name)
-    log.info(f'eval_save_path = {eval_save_path}')
-
-    metrics = [mse, mae, mfcc_dist, lsd]
     x_base_mel_mses = []
     x_target_mel_mses = []
     dry_eval = defaultdict(list)
     wet_eval = defaultdict(list)
-    completed_n = -1
+    n_completed = -1
 
     if os.path.exists(eval_save_path):
         eval_data = np.load(eval_save_path, allow_pickle=True)
 
         x_base_mel_mses = eval_data['x_base_mel_mses'].tolist()
         x_target_mel_mses = eval_data['x_target_mel_mses'].tolist()
-        completed_n = len(x_base_mel_mses)
-        assert len(x_target_mel_mses) == completed_n
+        n_completed = len(x_base_mel_mses)
+        assert len(x_target_mel_mses) == n_completed
 
         dry_eval = eval_data['dry_eval'].item()
         wet_eval = eval_data['wet_eval'].item()
         for _, data in dry_eval.items():
-            assert len(data) == completed_n
+            assert len(data) == n_completed
         for _, data in wet_eval.items():
-            assert len(data) == completed_n
+            assert len(data) == n_completed
 
-    log.info(f'completed_n = {completed_n}')
+    log.info(f'n_completed = {n_completed}')
 
-    if completed_n > 0:
+    if n_completed > 0:
         log.info(f'model_name = {model_name}')
         log.info('')
         log.info(f'x_base_mel_mses   = {np.mean(x_base_mel_mses):.5f}')
         log.info(f'x_target_mel_mses = {np.mean(x_target_mel_mses):.5f}')
         log.info('')
 
-        for metric, dry_v in dry_eval.items():
-            wet_v = wet_eval[metric]
+        for metric_name, dry_v in dry_eval.items():
+            wet_v = wet_eval[metric_name]
             dry_mean = np.mean(dry_v)
             wet_mean = np.mean(wet_v)
             delta_mean = wet_mean - dry_mean
 
-            log.info(f'{metric:<9} dry   = {dry_mean:.5f}')
-            log.info(f'{metric:<9} wet   = {wet_mean:.5f}')
-            log.info(f'{metric:<9} delta = {delta_mean:.5f}')
+            log.info(f'{metric_name:<9} dry   = {dry_mean:.5f}')
+            log.info(f'{metric_name:<9} wet   = {wet_mean:.5f}')
+            log.info(f'{metric_name:<9} delta = {delta_mean:.5f}')
     log.info('')
 
     for idx, (mel, mfcc, render_name, base_render_name, preset) in enumerate(
             zip(mels, mfccs, render_names, base_render_names, presets)):
-        if idx < completed_n:
+        if idx < n_completed:
             continue
         log.info('')
         log.info(f'Current idx = {idx}')
@@ -161,6 +162,7 @@ if __name__ == '__main__':
         cnn_pred = model.predict(cnn_x, batch_size=1)
         if not isinstance(cnn_pred, list):
             cnn_pred = [cnn_pred]
+        cnn_pred[-1] = np.clip(cnn_pred[-1], a_min=0.0, a_max=1.0)
 
         patches = get_patch_from_effect_cnn(effect,
                                             cnn_pred,

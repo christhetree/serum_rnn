@@ -352,6 +352,10 @@ if __name__ == '__main__':
                   loss=x_y_metadata.y_losses,
                   metrics=x_y_metadata.metrics)
 
+    # save_path = os.path.join(OUT_DIR, f'{model_name}__best.h5')
+    # model.save(save_path)
+    # exit()
+
     train_model_gen(model,
                     train_gen,
                     val_gen,
