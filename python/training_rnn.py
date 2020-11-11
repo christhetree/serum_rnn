@@ -8,7 +8,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tqdm import tqdm
 
-from config import OUT_DIR, DATASETS_DIR
+from config import OUT_DIR, DATASETS_DIR, MODELS_DIR
 from models_next_effect import next_effect_rnn, next_effect_seq_only_rnn, \
     all_effects_cnn
 from training_util import RNNDataGenerator, EFFECT_TO_IDX_MAPPING, \
@@ -150,11 +150,32 @@ if __name__ == '__main__':
     use_multiprocessing = True
     workers = 8
     load_prev_model = False
+    # load_prev_model = True
 
+    model_dir = MODELS_DIR
     # model_name = f'seq_5_v3_local__mfcc_30__{presets_cat}__rnn__{architecture.__name__}'
     model_name = f'seq_5_v3__mfcc_30__{presets_cat}' \
                  f'__rnn__{architecture.__name__}'
     log.info(f'model_name = {model_name}')
+
+    model = architecture(in_x=in_x,
+                         in_y=in_y,
+                         n_mfcc=n_mfcc,
+                         n_channels=n_channels,
+                         n_effects=n_effects)
+    model.summary()
+
+    if load_prev_model:
+        log.info('Loading previous best model.')
+        model.load_weights(os.path.join(model_dir, f'{model_name}__best.h5'))
+
+    log.info(f'loss = {loss}')
+    model.compile(optimizer='adam',
+                  loss=loss,
+                  metrics=metric)
+
+    # model.save(os.path.join(MODELS_DIR, f'{model_name}__best.h5'))
+    # exit()
 
     datasets_dir = DATASETS_DIR
     # data_dir = os.path.join(datasets_dir, f'seq_5_v3_local__proc__{presets_cat}__rnn')
@@ -180,22 +201,6 @@ if __name__ == '__main__':
                        n_effects,
                        effect_name_to_idx=EFFECT_TO_IDX_MAPPING,
                        batch_size=batch_size)
-
-    model = architecture(in_x=in_x,
-                         in_y=in_y,
-                         n_mfcc=n_mfcc,
-                         n_channels=n_channels,
-                         n_effects=n_effects)
-    model.summary()
-
-    if load_prev_model:
-        log.info('Loading previous best model.')
-        model.load_weights(os.path.join(OUT_DIR, f'{model_name}__best.h5'))
-
-    log.info(f'loss = {loss}')
-    model.compile(optimizer='adam',
-                  loss=loss,
-                  metrics=metric)
 
     train_model_gen(model,
                     train_gen,

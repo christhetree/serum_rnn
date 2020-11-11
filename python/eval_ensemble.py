@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict
-from typing import List, Dict, Union, Callable, DefaultDict
+from typing import List, Dict, Union, Callable, DefaultDict, Tuple
 
 import numpy as np
 import yaml
@@ -13,8 +13,9 @@ from audio_rendering import RenderConfig
 from config import OUT_DIR, MODELS_DIR, CONFIGS_DIR, DATA_DIR, PRESETS_DIR
 from effects import DESC_TO_PARAM
 from eval_util import get_patch_from_effect_cnn, render_name_to_rc_effects, \
-    load_effect_cnns, effect_cnn_audio_step, create_effect_cnn_x
-from metrics import mse, mae, mfcc_dist, lsd
+    load_effect_cnns, effect_cnn_audio_step, create_effect_cnn_x, \
+    crunch_eval_data
+from metrics import mse, mae, mfcc_dist, lsd, pcc, mssm
 from models_next_effect import next_effect_rnn, next_effect_seq_only_rnn, \
     all_effects_cnn
 from next_effect_wrappers import NextEffectWrapper, NextEffectRNNWrapper, \
@@ -79,45 +80,59 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
              renders_prefix: Union[str, int],
              next_effect_wrapper: NextEffectWrapper,
              effect_models: Dict[str, Model],
-             metrics: List[Callable[[np.ndarray, np.ndarray], float]],
+             mel_metrics: List[Callable[[np.ndarray, np.ndarray], float]],
+             audio_metrics: List[Callable[[np.ndarray, np.ndarray],
+                                          List[Tuple[str, float]]]],
+             save_renders: bool = True,
              effects_can_repeat: bool = False,
              max_steps: int = 8,
              seq_effects: bool = True) -> (List[str],
-                                     List[str],
-                                     DefaultDict[str, List[float]]):
+                                           List[str],
+                                           DefaultDict[str, List[float]]):
     log.info(f'Using preset: {preset_path}')
 
     n_effects = next_effect_wrapper.n_effects
     if not effects_can_repeat:
         max_steps = n_effects
 
-    eval_steps = defaultdict(list)
+    metric_steps = defaultdict(list)
 
     target_effect_names = sorted([e['name'] for e in target_rc_effects])
+    render_save_name = None
+    if save_renders:
+        render_save_name = f'{renders_prefix}__00_target' \
+                           f'__{"_".join(target_effect_names)}.wav'
+
     target_engine, target_audio, target_af = effect_cnn_audio_step(
         preset_path,
         target_rc_effects,
         rc,
         pc,
         render_save_dir=renders_save_dir,
-        render_save_name=f'{renders_prefix}__00_target'
-                         f'__{"_".join(target_effect_names)}.wav'
+        render_save_name=render_save_name
     )
 
-    init_effect_names = sorted([e['name'] for e in init_rc_effects])
+    if save_renders:
+        init_effect_names = sorted([e['name'] for e in init_rc_effects])
+        render_save_name = f'{renders_prefix}__00_init'  \
+                           f'__{"_".join(init_effect_names)}.wav'
+
     engine, dry_audio, dry_af = effect_cnn_audio_step(
         preset_path,
         init_rc_effects,
         rc,
         pc,
         render_save_dir=renders_save_dir,
-        render_save_name=f'{renders_prefix}__00_init'
-                         f'__{"_".join(init_effect_names)}.wav'
+        render_save_name=render_save_name
     )
 
-    for metric in metrics:
+    for metric in mel_metrics:
         dry_v = metric(dry_af.mel, target_af.mel)
-        eval_steps[metric.__name__].append(dry_v)
+        metric_steps[metric.__name__].append(dry_v)
+    for metric in audio_metrics:
+        metric_results = metric(dry_audio, target_audio)
+        for metric_name, dry_v in metric_results:
+            metric_steps[metric_name].append(dry_v)
 
     af_seq = [dry_af]
     effect_name_seq = []
@@ -150,6 +165,10 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
         log.info(f'pred patch = {patch}')
         step_rc_effects = [{'name': next_effect_name}]
 
+        if save_renders:
+            render_save_name = f'{renders_prefix}__{step_idx + 1:02d}' \
+                               f'__{"_".join(effect_name_seq)}.wav'
+
         _, wet_audio, wet_af = effect_cnn_audio_step(
             preset_path,
             step_rc_effects,
@@ -158,13 +177,16 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
             engine=engine,
             patch=patch,
             render_save_dir=renders_save_dir,
-            render_save_name=f'{renders_prefix}__{step_idx + 1:02d}'
-                             f'__{"_".join(effect_name_seq)}.wav'
+            render_save_name=render_save_name
         )
 
-        for metric in metrics:
+        for metric in mel_metrics:
             wet_v = metric(wet_af.mel, target_af.mel)
-            eval_steps[metric.__name__].append(wet_v)
+            metric_steps[metric.__name__].append(wet_v)
+        for metric in audio_metrics:
+            metric_results = metric(wet_audio, target_audio)
+            for metric_name, wet_v in metric_results:
+                metric_steps[metric_name].append(wet_v)
 
         if seq_effects:
             af_seq.append(wet_af)
@@ -178,7 +200,7 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
     log.info(f'effect_name_seq = {effect_name_seq}')
     log.info('')
 
-    for metric_name, values in eval_steps.items():
+    for metric_name, values in metric_steps.items():
         log.info(f'{metric_name:<9} = '
                  f'{" -> ".join(f"{v:>8.4f}" for v in values)}')
 
@@ -198,7 +220,7 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
     log.info('')
     log.info('')
 
-    return target_effect_names, effect_name_seq, eval_steps
+    return target_effect_names, effect_name_seq, metric_steps
 
 
 if __name__ == '__main__':
@@ -221,14 +243,17 @@ if __name__ == '__main__':
     seq_effects = True
     # seq_effects = False
 
-    metrics = [mse, mae, mfcc_dist, lsd]
+    mel_metrics = [mse, mae, mfcc_dist, lsd, pcc]
+    audio_metrics = [mssm]
+
+    save_renders = False
 
     model_dir = MODELS_DIR
     renders_save_dir = OUT_DIR
     eval_in_dir = os.path.join(DATA_DIR, 'eval_in')
     eval_in_path = os.path.join(eval_in_dir,
                                 f'seq_5_v3__mfcc_30__{presets_cat}'
-                                f'__ensemble_eval_in_data.npz')
+                                f'__ensemble__eval_in_data.npz')
     log.info(f'eval_in_path = {eval_in_path}')
 
     eval_in_data = np.load(eval_in_path)
@@ -242,6 +267,9 @@ if __name__ == '__main__':
                      f'__eval_out_data.npz'
     eval_save_path = os.path.join(eval_out_dir, eval_save_name)
     log.info(f'eval_save_path = {eval_save_path}')
+
+    crunch_eval_data(eval_save_path)
+    exit()
 
     next_effect_model_name = f'seq_5_v3__mfcc_30__{presets_cat}' \
                              f'__rnn__{next_effect_architecture}__best.h5'
@@ -315,6 +343,7 @@ if __name__ == '__main__':
             continue
         log.info('============================================================')
         log.info(f'next_effect_architecture = {next_effect_architecture}')
+        log.info(f'seq_effects = {seq_effects}')
         log.info(f'idx = {idx}')
         log.info(f'preset = {preset}')
         log.info('')
@@ -326,21 +355,23 @@ if __name__ == '__main__':
 
         target_effect_names, \
         effect_name_seq, \
-        eval_steps = ensemble(init_rc_effects,
-                              target_rc_effects,
-                              preset_path,
-                              rc,
-                              pc,
-                              renders_save_dir,
-                              renders_prefix,
-                              wrapper,
-                              effect_models,
-                              metrics,
-                              seq_effects=seq_effects)
+        metric_steps = ensemble(init_rc_effects,
+                                target_rc_effects,
+                                preset_path,
+                                rc,
+                                pc,
+                                renders_save_dir,
+                                renders_prefix,
+                                wrapper,
+                                effect_models,
+                                mel_metrics,
+                                audio_metrics,
+                                save_renders=save_renders,
+                                seq_effects=seq_effects)
 
         target_effect_names_all.append(target_effect_names)
         effect_name_seq_all.append(effect_name_seq)
-        for k, v in eval_steps.items():
+        for k, v in metric_steps.items():
             eval_metrics_all[k].append(v)
 
         np.savez(eval_save_path,

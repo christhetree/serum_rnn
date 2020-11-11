@@ -274,91 +274,64 @@ def get_random_rc_effects(
     return rand_rc_effects
 
 
-def crunch_eval_data(save_path: str):
+def crunch_eval_data(save_path: str) -> None:
     eval_data = np.load(save_path, allow_pickle=True)
     target_effect_names_all = eval_data['target_effect_names_all'].tolist()
     effect_name_seq_all = eval_data['effect_name_seq_all'].tolist()
-    mses_all = eval_data['mses_all'].tolist()
-    maes_all = eval_data['maes_all'].tolist()
-    mfcc_dists_all = eval_data['mfcc_dists_all'].tolist()
-    lsds_all = eval_data['lsds_all'].tolist()
-    assert len(target_effect_names_all) == len(effect_name_seq_all) == len(mses_all) == len(maes_all) == len(mfcc_dists_all) == len(lsds_all)
+    eval_metrics_all = eval_data['eval_metrics_all'].item()
+
+    n_data_points = len(list(eval_metrics_all.items())[0])
+    assert all(len(metric) == n_data_points
+               for metric in eval_metrics_all.items())
 
     all_steps_d = defaultdict(lambda: defaultdict(list))
     all_effects_d = defaultdict(lambda: defaultdict(list))
     same_steps_d = defaultdict(lambda: defaultdict(list))
+
     inits = defaultdict(list)
     all_steps_ends = defaultdict(list)
     all_effects_ends = defaultdict(list)
     same_steps_ends = defaultdict(list)
 
-    for target_effect_names, effect_name_seq, mses, maes, mfcc_dists, lsds in zip(
-            target_effect_names_all, effect_name_seq_all, mses_all, maes_all, mfcc_dists_all, lsds_all):
-        target_effect_names = set(target_effect_names)
-        n_target_effects = len(target_effect_names)
+    for metric_name, metric_all in eval_metrics_all.items():
+        # derp = 0
 
-        if n_target_effects == 3:
-            derp = 1
+        for target_effect_names, effect_name_seq, metric_vals in zip(
+                target_effect_names_all, effect_name_seq_all, metric_all):
+            target_effect_names = set(target_effect_names)
+            n_target_effects = len(target_effect_names)
+            used_effects = set()
 
-        used_effects = set()
-        for idx, effect_name in enumerate(effect_name_seq):
-            step_idx = idx + 1
+            # if derp == 630:
+            #     merp = 1
+            # derp += 1
 
-            prev_mse = mses[idx]
-            prev_mae = maes[idx]
-            prev_mfcc_dist = mfcc_dists[idx]
-            prev_lsd = lsds[idx]
-            step_mse = mses[step_idx]
-            step_mae = maes[step_idx]
-            step_mfcc_dist = mfcc_dists[step_idx]
-            step_lsd = lsds[step_idx]
-            d_mse = step_mse - prev_mse
-            d_mae = step_mae - prev_mae
-            d_lsd = step_lsd - prev_lsd
-            d_mfcc_dist = step_mfcc_dist - prev_mfcc_dist
+            for idx, effect_name in enumerate(effect_name_seq):
+                step_idx = idx + 1
 
-            if idx == 0:
-                inits['mse'].append(prev_mse)
-                inits['mae'].append(prev_mae)
-                inits['mfcc'].append(prev_mfcc_dist)
-                inits['lsd'].append(prev_lsd)
+                prev_val = metric_vals[idx]
+                step_val = metric_vals[step_idx]
+                delta = step_val - prev_val
 
-            if step_idx == len(effect_name_seq):
-                all_steps_ends['mse'].append(step_mse)
-                all_steps_ends['mae'].append(step_mae)
-                all_steps_ends['mfcc'].append(step_mfcc_dist)
-                all_steps_ends['lsd'].append(step_lsd)
+                if idx == 0:
+                    inits[metric_name].append(prev_val)
+                if step_idx == len(effect_name_seq):
+                    all_steps_ends[metric_name].append(step_val)
+                if step_idx == n_target_effects:
+                    same_steps_ends[metric_name].append(step_val)
 
-            if step_idx == n_target_effects:
-                same_steps_ends['mse'].append(step_mse)
-                same_steps_ends['mae'].append(step_mae)
-                same_steps_ends['mfcc'].append(step_mfcc_dist)
-                same_steps_ends['lsd'].append(step_lsd)
+                all_steps_d[metric_name][step_idx].append(delta)
 
-            all_steps_d['mse'][step_idx].append(d_mse)
-            all_steps_d['mae'][step_idx].append(d_mae)
-            all_steps_d['mfcc'][step_idx].append(d_mfcc_dist)
-            all_steps_d['lsd'][step_idx].append(d_lsd)
+                if not all(e in used_effects for e in target_effect_names):
+                    all_effects_d[metric_name][step_idx].append(delta)
+                prev_effects = set(used_effects)
+                used_effects.add(effect_name)
+                if not all(e in prev_effects for e in target_effect_names) \
+                        and all(e in used_effects for e in target_effect_names):
+                    all_effects_ends[metric_name].append(step_val)
 
-            if not all(e in used_effects for e in target_effect_names):
-                all_effects_d['mse'][step_idx].append(d_mse)
-                all_effects_d['mae'][step_idx].append(d_mae)
-                all_effects_d['mfcc'][step_idx].append(d_mfcc_dist)
-                all_effects_d['lsd'][step_idx].append(d_lsd)
-            prev_used_effects = set(used_effects)
-            used_effects.add(effect_name)
-            if not all(e in prev_used_effects for e in target_effect_names) \
-                    and all(e in used_effects for e in target_effect_names):
-                all_effects_ends['mse'].append(step_mse)
-                all_effects_ends['mae'].append(step_mae)
-                all_effects_ends['mfcc'].append(step_mfcc_dist)
-                all_effects_ends['lsd'].append(step_lsd)
-
-            if idx < n_target_effects:
-                same_steps_d['mse'][step_idx].append(d_mse)
-                same_steps_d['mae'][step_idx].append(d_mae)
-                same_steps_d['mfcc'][step_idx].append(d_mfcc_dist)
-                same_steps_d['lsd'][step_idx].append(d_lsd)
+                if idx < n_target_effects:
+                    same_steps_d[metric_name][step_idx].append(delta)
 
     for key, init in inits.items():
         all_steps_end = all_steps_ends[key]
@@ -392,6 +365,9 @@ def crunch_eval_data(save_path: str):
             log.info(f'same_steps n={len(same_steps_s)}, mean d = {np.mean(same_steps_s):.4f}')
             log.info('')
         log.info('')
+
+        # print(max(init))
+        # print(init.index(max(init)))
 
 
 def effect_cnn_audio_step(
