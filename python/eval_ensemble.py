@@ -15,7 +15,7 @@ from effects import DESC_TO_PARAM
 from eval_util import get_patch_from_effect_cnn, render_name_to_rc_effects, \
     load_effect_cnns, effect_cnn_audio_step, create_effect_cnn_x, \
     crunch_eval_data
-from metrics import mse, mae, mfcc_dist, lsd, pcc, mssm
+from metrics import mse, mae, mfcc_dist, lsd, pcc, mssmae
 from models_next_effect import next_effect_rnn, next_effect_seq_only_rnn, \
     all_effects_cnn
 from next_effect_wrappers import NextEffectWrapper, NextEffectRNNWrapper, \
@@ -244,8 +244,9 @@ if __name__ == '__main__':
     # seq_effects = False
 
     mel_metrics = [mse, mae, mfcc_dist, lsd, pcc]
-    audio_metrics = [mssm]
+    audio_metrics = [mssmae]
 
+    # save_renders = True
     save_renders = False
 
     model_dir = MODELS_DIR
@@ -268,8 +269,8 @@ if __name__ == '__main__':
     eval_save_path = os.path.join(eval_out_dir, eval_save_name)
     log.info(f'eval_save_path = {eval_save_path}')
 
-    crunch_eval_data(eval_save_path)
-    exit()
+    # crunch_eval_data(eval_save_path)
+    # exit()
 
     next_effect_model_name = f'seq_5_v3__mfcc_30__{presets_cat}' \
                              f'__rnn__{next_effect_architecture}__best.h5'

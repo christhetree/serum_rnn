@@ -1,9 +1,10 @@
 import copy
+import csv
 import logging
 import os
 import random
 from collections import defaultdict
-from typing import List, Dict, Callable, Union, Optional
+from typing import List, Dict, Callable, Union, Optional, DefaultDict
 
 import librenderman as rm
 import numpy as np
@@ -14,7 +15,7 @@ from audio_features import get_mel_spec, AudioFeatures
 from audio_processing_util import ProcessConfig
 from audio_rendering import PatchGenerator
 from audio_rendering_util import RenderConfig, render_patch
-from config import OUT_DIR
+from config import OUT_DIR, DATA_DIR
 from effects import get_effect, PARAM_TO_DESC, DESC_TO_PARAM, PARAM_TO_EFFECT
 from models_effect import baseline_cnn_2x
 from serum_util import set_preset, setup_serum
@@ -274,7 +275,8 @@ def get_random_rc_effects(
     return rand_rc_effects
 
 
-def crunch_eval_data(save_path: str) -> None:
+def crunch_eval_data(save_path: str) -> DefaultDict[str,
+                                                    DefaultDict[str, dict]]:
     eval_data = np.load(save_path, allow_pickle=True)
     target_effect_names_all = eval_data['target_effect_names_all'].tolist()
     effect_name_seq_all = eval_data['effect_name_seq_all'].tolist()
@@ -287,24 +289,23 @@ def crunch_eval_data(save_path: str) -> None:
     all_steps_d = defaultdict(lambda: defaultdict(list))
     all_effects_d = defaultdict(lambda: defaultdict(list))
     same_steps_d = defaultdict(lambda: defaultdict(list))
+    until_worse_n_d = defaultdict(lambda: defaultdict(lambda:
+                                                      defaultdict(list)))
 
     inits = defaultdict(list)
     all_steps_ends = defaultdict(list)
     all_effects_ends = defaultdict(list)
     same_steps_ends = defaultdict(list)
+    until_worse_n_ends = defaultdict(lambda: defaultdict(list))
 
     for metric_name, metric_all in eval_metrics_all.items():
-        # derp = 0
-
         for target_effect_names, effect_name_seq, metric_vals in zip(
                 target_effect_names_all, effect_name_seq_all, metric_all):
             target_effect_names = set(target_effect_names)
             n_target_effects = len(target_effect_names)
             used_effects = set()
-
-            # if derp == 630:
-            #     merp = 1
-            # derp += 1
+            n_worse = 0
+            worse_n_active = [True] * 6
 
             for idx, effect_name in enumerate(effect_name_seq):
                 step_idx = idx + 1
@@ -313,10 +314,33 @@ def crunch_eval_data(save_path: str) -> None:
                 step_val = metric_vals[step_idx]
                 delta = step_val - prev_val
 
+                new_n_worse = n_worse
+                if metric_name == 'pcc' and delta < 0.0:
+                    new_n_worse += 1
+                elif metric_name != 'pcc' and delta > 0.0:
+                    new_n_worse += 1
+
+                if new_n_worse != n_worse:
+                    if worse_n_active[n_worse]:
+                        until_worse_n_ends[n_worse][metric_name].append(
+                            prev_val)
+                        until_worse_n_d[n_worse][metric_name][step_idx].append(
+                            0.0)
+                        worse_n_active[n_worse] = False
+
+                for n, active in enumerate(worse_n_active):
+                    if active:
+                        until_worse_n_d[n][metric_name][step_idx].append(delta)
+
+                n_worse = new_n_worse
+
                 if idx == 0:
                     inits[metric_name].append(prev_val)
                 if step_idx == len(effect_name_seq):
                     all_steps_ends[metric_name].append(step_val)
+                    for n, active in enumerate(worse_n_active):
+                        if active:
+                            until_worse_n_ends[n][metric_name].append(step_val)
                 if step_idx == n_target_effects:
                     same_steps_ends[metric_name].append(step_val)
 
@@ -333,41 +357,158 @@ def crunch_eval_data(save_path: str) -> None:
                 if idx < n_target_effects:
                     same_steps_d[metric_name][step_idx].append(delta)
 
+    results = defaultdict(lambda: defaultdict(dict))
+
     for key, init in inits.items():
         all_steps_end = all_steps_ends[key]
         all_effects_end = all_effects_ends[key]
         same_steps_end = same_steps_ends[key]
+        assert len(init) == len(all_steps_end) \
+               == len(all_effects_end) \
+               == len(same_steps_end)
         mean_init = np.mean(init)
+        results['all_steps']['mean_init'][key] = mean_init
+        results['all_effects']['mean_init'][key] = mean_init
+        results['same_steps']['mean_init'][key] = mean_init
 
         mean_all_steps_end = np.mean(all_steps_end)
+        results['all_steps']['mean_end'][key] = mean_all_steps_end
+        results['all_steps']['mean_d'][key] = mean_all_steps_end - mean_init
         mean_all_effects_end = np.mean(all_effects_end)
+        results['all_effects']['mean_end'][key] = mean_all_effects_end
+        results['all_effects']['mean_d'][key] = mean_all_effects_end - mean_init
         mean_same_steps_end = np.mean(same_steps_end)
-        log.info(f'{key} mean init error = {mean_init:.4f}')
+        results['same_steps']['mean_end'][key] = mean_same_steps_end
+        results['same_steps']['mean_d'][key] = mean_same_steps_end - mean_init
 
-        log.info(f'{key} mean all_steps_end error = {mean_all_steps_end:.4f}')
-        log.info(f'{key} mean all_effects_end error = {mean_all_effects_end:.4f}')
-        log.info(f'{key} mean same_steps_end error = {mean_same_steps_end:.4f}')
+        log.info(f'{key:<9} mean init error                          = {mean_init:>8.4f}')
+        log.info('')
+        log.info(f'{key:<9} mean all_steps_end error                 = {mean_all_steps_end:>8.4f}')
+        log.info(f'{key:<9} mean all_effects_end error               = {mean_all_effects_end:>8.4f}')
+        log.info(f'{key:<9} mean same_steps_end error                = {mean_same_steps_end:>8.4f}')
 
-        log.info(f'{key} mean all_steps_end error d = {mean_all_steps_end - mean_init:.4f}')
-        log.info(f'{key} mean mean_all_effects_end error d = {mean_all_effects_end - mean_init:.4f}')
-        log.info(f'{key} mean mean_same_steps_end error d = {mean_same_steps_end - mean_init:.4f}')
+        for n, until_worse_ends in sorted(until_worse_n_ends.items()):
+            results[f'until_worse_{n}']['mean_init'][key] = mean_init
+            until_worse_end = until_worse_ends[key]
+            assert len(until_worse_end) == len(init)
+            mean_until_worse_end = np.mean(until_worse_end)
+            results[f'until_worse_{n}']['mean_end'][key] = mean_until_worse_end
+            results[f'until_worse_{n}']['mean_d'][key] = mean_until_worse_end - mean_init
+            log.info(f'{key:<9} mean until_worse_end {n} error             = {mean_until_worse_end:>8.4f}')
+
+        log.info('')
+        log.info(f'{key:<9} mean all_steps_end error d               = {mean_all_steps_end - mean_init:>8.4f}')
+        log.info(f'{key:<9} mean mean_all_effects_end error d        = {mean_all_effects_end - mean_init:>8.4f}')
+        log.info(f'{key:<9} mean mean_same_steps_end error d         = {mean_same_steps_end - mean_init:>8.4f}')
+
+        for n, until_worse_ends in sorted(until_worse_n_ends.items()):
+            until_worse_end = until_worse_ends[key]
+            mean_until_worse_end = np.mean(until_worse_end)
+            log.info(f'{key:<9} mean until_worse_end {n} error d           = {mean_until_worse_end - mean_init:>8.4f}')
+
         log.info('')
 
         all_steps_c = all_steps_d[key]
         all_effects_c = all_effects_d[key]
         same_steps_c = same_steps_d[key]
+
         for step_idx, all_steps_s in all_steps_c.items():
+            results['all_steps'][f'n_step_{step_idx}'][key] = len(all_steps_s)
+            results['all_steps'][f'step_{step_idx}'][key] = np.mean(
+                all_steps_s)
             all_effects_s = all_effects_c[step_idx]
+            results['all_effects'][f'n_step_{step_idx}'][key] = len(
+                all_effects_s)
+            results['all_effects'][f'step_{step_idx}'][key] = np.mean(
+                all_effects_s)
             same_steps_s = same_steps_c[step_idx]
+            results['same_steps'][f'n_step_{step_idx}'][key] = len(same_steps_s)
+            results['same_steps'][f'step_{step_idx}'][key] = np.mean(
+                same_steps_s)
+
             log.info(f'step_idx = {step_idx}')
-            log.info(f'all_steps n={len(all_steps_s)}, mean d = {np.mean(all_steps_s):.4f}')
-            log.info(f'all_effects n={len(all_effects_s)}, mean d = {np.mean(all_effects_s):.4f}')
-            log.info(f'same_steps n={len(same_steps_s)}, mean d = {np.mean(same_steps_s):.4f}')
+            log.info(f'all_steps     n={len(all_steps_s):>4}, mean d                       = {np.mean(all_steps_s):>8.4f}')
+            log.info(f'all_effects   n={len(all_effects_s):>4}, mean d                       = {np.mean(all_effects_s):>8.4f}')
+            log.info(f'same_steps    n={len(same_steps_s):>4}, mean d                       = {np.mean(same_steps_s):>8.4f}')
+
+            for n, until_worse_d in sorted(until_worse_n_d.items()):
+                until_worse_c = until_worse_d[key]
+                until_worse_s = until_worse_c[step_idx]
+                results[f'until_worse_{n}'][f'n_step_{step_idx}'][key] = len(until_worse_s)
+                results[f'until_worse_{n}'][f'step_{step_idx}'][key] = np.mean(until_worse_s)
+                log.info(f'until_worse {n} n={len(until_worse_s):>4}, mean d                       = {np.mean(until_worse_s):>8.4f}')
+
             log.info('')
         log.info('')
 
-        # print(max(init))
-        # print(init.index(max(init)))
+    return results
+
+
+def generate_eval_tsv(eval_out_dir: str,
+                      prefix: str,
+                      result_type: str,
+                      metric_names: List[str],
+                      sort_cols: List[str]) -> None:
+    # key_order = ['mean_init', 'mean_end', 'mean_d',
+    #              'step_1', 'step_2',  'step_3', 'step_4', 'step_5',
+    #              'n_step_1', 'n_step_2', 'n_step_3', 'n_step_4', 'n_step_5']
+    key_order = ['mean_d']
+
+    tsv_name = f'{prefix}__tsv__{result_type}.tsv'
+    tsv_path = os.path.join(eval_out_dir, tsv_name)
+    wrote_header = False
+
+    with open(tsv_path, 'w') as tsv_file:
+        writer = csv.writer(tsv_file, delimiter='\t')
+        rows = []
+        header = [f'{"next_effect_model":<40}']
+
+        for eval_out_file_name in sorted(os.listdir(eval_out_dir)):
+            if eval_out_file_name.startswith(prefix) \
+                    and eval_out_file_name.endswith('.npz'):
+                tokens = eval_out_file_name.split('__')
+                name = f'{tokens[4]}__{tokens[5]}'
+                row = [f'{name:<40}']
+
+                results = crunch_eval_data(os.path.join(eval_out_dir,
+                                                        eval_out_file_name))
+                results = results[result_type]
+
+                for key in key_order:
+                    metrics = results[key]
+                    for metric_name in metric_names:
+                        metric = metrics[metric_name]
+                        col_name = f'{key}__{metric_name}'
+                        header.append(f'{col_name}')
+                        row.append(f'{metric:>{len(col_name)}.5f}')
+
+                if not wrote_header:
+                    header.append('points')
+                    writer.writerow(header)
+                    wrote_header = True
+
+                rows.append(row)
+
+        points = defaultdict(int)
+        for sort_col in sort_cols:
+            sort_col_idx = header.index(sort_col)
+            if sort_col.endswith('pcc'):
+                rows.sort(key=lambda r: float(r[sort_col_idx]), reverse=True)
+            else:
+                rows.sort(key=lambda r: float(r[sort_col_idx]), reverse=False)
+
+            for idx, row in enumerate(rows):
+                next_effect_model = row[0]
+                points[next_effect_model] += idx
+
+        for row in rows:
+            next_effect_model = row[0]
+            row.append(points[next_effect_model])
+
+        rows.sort(key=lambda r: r[-1], reverse=False)
+
+        for row in rows:
+            writer.writerow(row)
 
 
 def effect_cnn_audio_step(
@@ -421,3 +562,32 @@ def create_effect_cnn_x(target_af: AudioFeatures,
     mfcc_x = np.stack([target_af.mfcc, base_af.mfcc], axis=-1)
     mfcc_x = np.expand_dims(mfcc_x, axis=0)
     return [mel_x, mfcc_x]
+
+
+if __name__ == '__main__':
+    # presets_cat = 'basic_shapes'
+    # presets_cat = 'adv_shapes'
+    presets_cat = 'temporal'
+
+    # results_type = 'all_steps'
+    # results_type = 'all_effects'
+    # results_type = 'same_steps'
+    # results_type = 'until_worse_0'
+    results_type = 'until_worse_1'
+    # results_type = 'until_worse_2'
+    # results_type = 'until_worse_3'
+    # results_type = 'until_worse_4'
+    # results_type = 'until_worse_5'
+
+    metric_names = ['mse', 'mae', 'lsd', 'mfcc_dist', 'pcc', 'mssmae', 'mssmmae']
+    sort_cols = [f'mean_d__{m}' for m in metric_names]
+    # sort_cols = ['mean_d__mfcc_dist']
+    # sort_cols = ['mean_d__pcc']
+
+    eval_out_dir = os.path.join(DATA_DIR, 'eval_out')
+    prefix = f'seq_5_v3__mfcc_30__{presets_cat}'
+    generate_eval_tsv(eval_out_dir,
+                      prefix,
+                      results_type,
+                      metric_names,
+                      sort_cols)

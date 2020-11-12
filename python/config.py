@@ -18,8 +18,6 @@ VST_DIR = os.path.join(DATA_DIR, 'vst')
 DATASETS_DIR = os.path.join(DATA_DIR, 'datasets')
 
 EFFECTS_DIR = os.path.join(CONFIGS_DIR, 'effects')
-SERUM_PATH = os.path.join(VST_DIR, 'Serum.vst')
-log.info(f'Serum path: {SERUM_PATH}')
 DEFAULT_SERUM_PRESET_PATH = os.path.join(PRESETS_DIR, 'saw.fxp')
 
 # Renderman
@@ -35,4 +33,14 @@ MAX_DUPLICATES = 50
 MEL_SR = RM_SR
 HOP_LENGTH = 512
 N_MELS = 128
-N_FFT = 4096
+N_FFT = 2048
+
+
+def get_serum_path(instance: int = 1) -> str:
+    serum_path = os.path.join(VST_DIR, f'Serum_{instance}.vst')
+    assert os.path.exists(serum_path)
+    return serum_path
+
+
+SERUM_PATH = get_serum_path()
+log.info(f'Serum path: {SERUM_PATH}')
