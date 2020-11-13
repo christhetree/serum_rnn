@@ -144,8 +144,8 @@ def mssmae(audio_a: np.ndarray,
 
     final_mae = np.mean(mae_s)
     final_mmae = np.mean(mmae_s)
-    assert 0.0 <= final_mae < 50.0, f'final_mae = {final_mae:.5f}'
-    assert 0.0 <= final_mmae < 50.0, f'final_mmae = {final_mmae:.5f}'
+    assert 0.0 <= final_mae < 100.0, f'final_mae = {final_mae:.5f}'
+    assert 0.0 <= final_mmae < 100.0, f'final_mmae = {final_mmae:.5f}'
     return [('mssmae', final_mae), ('mssmmae', final_mmae)]
 
 

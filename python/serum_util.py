@@ -16,6 +16,7 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 def load_preset(engine: rm.RenderEngine,
                 preset_path: str,
                 render_once: bool = True) -> None:
+    assert os.path.exists(preset_path)
     engine.load_preset(preset_path)
 
     if render_once:
@@ -32,7 +33,6 @@ def setup_serum(preset_path: str = None,
     engine.load_plugin(SERUM_PATH)
 
     if preset_path:
-        assert os.path.exists(preset_path)
         load_preset(engine, preset_path, render_once=render_once)
 
     return engine

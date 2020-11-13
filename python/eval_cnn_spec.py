@@ -13,7 +13,7 @@ from audio_rendering import RenderConfig
 from config import PRESETS_DIR, MODELS_DIR, CONFIGS_DIR, OUT_DIR, DATA_DIR
 from eval_util import effect_cnn_audio_step, create_effect_cnn_x, \
     render_name_to_rc_effects, get_patch_from_effect_cnn
-from metrics import mae, mse, mfcc_dist, lsd
+from metrics import mae, mse, mfcc_dist, lsd, mssmae, pcc
 from models_effect import baseline_cnn_2x
 from training_util import EFFECT_TO_Y_PARAMS
 
@@ -37,7 +37,11 @@ if __name__ == '__main__':
     params = EFFECT_TO_Y_PARAMS[effect]
 
     architecture = baseline_cnn_2x
-    metrics = [mse, mae, mfcc_dist, lsd]
+    mel_metrics = [mse, mae, mfcc_dist, lsd, pcc]
+    audio_metrics = [mssmae]
+
+    # save_renders = True
+    save_renders = False
 
     channel_mode = 1
     model_dir = MODELS_DIR
@@ -141,21 +145,28 @@ if __name__ == '__main__':
         assert any(e['name'] == effect for e in target_rc_effects)
         assert all(e['name'] != effect for e in base_rc_effects)
 
+        render_save_name = None
+
+        if save_renders:
+            render_save_name = f'{idx:03d}__target.wav'
         _, target_audio, target_af = effect_cnn_audio_step(
             preset_path,
             target_rc_effects,
             rc,
             pc,
             render_save_dir=OUT_DIR,
-            render_save_name=f'{idx:03d}__target.wav'
+            render_save_name=render_save_name
         )
+
+        if save_renders:
+            render_save_name = f'{idx:03d}__dry.wav'
         engine, dry_audio, dry_af = effect_cnn_audio_step(
             preset_path,
             base_rc_effects,
             rc,
             pc,
             render_save_dir=OUT_DIR,
-            render_save_name=f'{idx:03d}_dry.wav'
+            render_save_name=render_save_name
         )
 
         cnn_x = create_effect_cnn_x(target_af, dry_af)
@@ -172,6 +183,8 @@ if __name__ == '__main__':
         log.info(f'pred patch = {patch}')
         step_rc_effects = [{'name': effect}]
 
+        if save_renders:
+            render_save_name = f'{idx:03d}__wet.wav'
         _, wet_audio, wet_af = effect_cnn_audio_step(
             preset_path,
             step_rc_effects,
@@ -180,7 +193,7 @@ if __name__ == '__main__':
             engine=engine,
             patch=patch,
             render_save_dir=OUT_DIR,
-            render_save_name=f'{idx:03d}_wet.wav'
+            render_save_name=render_save_name
         )
 
         x_target_mel_mse = mean_squared_error(x_target_mel, target_af.mel)
@@ -188,11 +201,18 @@ if __name__ == '__main__':
         x_target_mel_mses.append(x_target_mel_mse)
         x_base_mel_mses.append(x_base_mel_mse)
 
-        for metric in metrics:
+        for metric in mel_metrics:
             dry_v = metric(dry_af.mel, target_af.mel)
             dry_eval[metric.__name__].append(dry_v)
             wet_v = metric(wet_af.mel, target_af.mel)
             wet_eval[metric.__name__].append(wet_v)
+        for metric in audio_metrics:
+            dry_result = metric(dry_audio, target_audio)
+            for metric_name, dry_v in dry_result:
+                dry_eval[metric_name].append(dry_v)
+            wet_result = metric(wet_audio, target_audio)
+            for metric_name, wet_v in wet_result:
+                wet_eval[metric_name].append(wet_v)
 
         np.savez(eval_save_path,
                  x_base_mel_mses=x_base_mel_mses,
