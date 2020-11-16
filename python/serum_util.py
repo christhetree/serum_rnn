@@ -15,14 +15,12 @@ log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 def load_preset(engine: rm.RenderEngine,
                 preset_path: str,
-                render_once: bool = True) -> None:
+                render_once: bool) -> None:
     assert os.path.exists(preset_path)
     engine.load_preset(preset_path)
 
     if render_once:
-        engine.render_patch(48, 127, 2.0, 4.0, False)
-        engine.get_audio_frames()
-        engine.render_patch(48, 127, 1.0, 1.0, False)
+        engine.render_patch(60, 127, 1.0, 4.0, False)
         engine.get_audio_frames()
 
 

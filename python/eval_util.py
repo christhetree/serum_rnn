@@ -519,10 +519,15 @@ def effect_cnn_audio_step(
         engine: Optional[rm.RenderEngine] = None,
         patch: Optional[Dict[int, float]] = None,
         render_save_dir: Optional[str] = OUT_DIR,
-        render_save_name: Optional[str] = None
+        render_save_name: Optional[str] = None,
+        double_render: bool = True
 ) -> (rm.RenderEngine, np.ndarray, AudioFeatures):
+    setup_render_once = not double_render
+
     if engine is None:
-        engine = setup_serum(preset_path, sr=rc.sr, render_once=True)
+        engine = setup_serum(preset_path,
+                             sr=rc.sr,
+                             render_once=setup_render_once)
     if patch is None:
         patch = {}
 
@@ -530,6 +535,13 @@ def effect_cnn_audio_step(
                                     step_rc_effects,
                                     rc.effects,
                                     rc.gran)
+
+    if double_render:
+        _ = render_patch(engine,
+                         patch,
+                         rc,
+                         render_save_dir,
+                         render_save_name)
     audio = render_patch(engine,
                          patch,
                          rc,
@@ -584,7 +596,7 @@ if __name__ == '__main__':
     # sort_cols = ['mean_d__mfcc_dist']
     # sort_cols = ['mean_d__pcc']
 
-    eval_out_dir = os.path.join(DATA_DIR, 'eval_out')
+    eval_out_dir = os.path.join(DATA_DIR, 'eval_out/ensemble')
     prefix = f'seq_5_v3__mfcc_30__{presets_cat}'
     generate_eval_tsv(eval_out_dir,
                       prefix,

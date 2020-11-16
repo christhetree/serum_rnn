@@ -1,0 +1,8 @@
+next_effect_model                       	mean_d__mse	mean_d__mae	mean_d__lsd	mean_d__mfcc_dist	mean_d__pcc	mean_d__mssmae	mean_d__mssmmae	points
+next_effect_rnn__is_seq_True            	   -0.04037	   -0.09407	   -8.36181	        -96.16743	    0.15530	      -0.32531	       -0.45779	0
+next_effect_seq_only_rnn__is_seq_True   	   -0.04022	   -0.09204	   -8.24993	        -94.54601	    0.15260	      -0.30056	       -0.42342	8
+all_effects_cnn__is_seq_True            	   -0.03974	   -0.09215	   -8.18343	        -93.72061	    0.14710	      -0.28844	       -0.39192	14
+oracle_fixed_seq__is_seq_True           	   -0.03901	   -0.09041	   -8.08069	        -92.55597	    0.13782	      -0.28319	       -0.40259	21
+oracle_random__is_seq_True              	   -0.03814	   -0.08687	   -7.69550	        -87.94449	    0.14047	      -0.27429	       -0.38653	27
+fixed_seq__is_seq_True                  	   -0.03617	   -0.08059	   -7.00019	        -80.41463	    0.11423	      -0.25058	       -0.35380	37
+random__is_seq_True                     	   -0.03328	   -0.07445	   -6.51806	        -74.40013	    0.11959	      -0.25555	       -0.33900	40

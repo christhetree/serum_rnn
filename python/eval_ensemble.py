@@ -103,13 +103,19 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
         render_save_name = f'{renders_prefix}__00_target' \
                            f'__{"_".join(target_effect_names)}.wav'
 
+    double_render = True
+    if set(target_effect_names) == {'reverb-hall'}:
+        log.info('Double render for target and init audio turned off.')
+        double_render = False
+
     target_engine, target_audio, target_af = effect_cnn_audio_step(
         preset_path,
         target_rc_effects,
         rc,
         pc,
         render_save_dir=renders_save_dir,
-        render_save_name=render_save_name
+        render_save_name=render_save_name,
+        double_render=double_render
     )
 
     if save_renders:
@@ -123,7 +129,8 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
         rc,
         pc,
         render_save_dir=renders_save_dir,
-        render_save_name=render_save_name
+        render_save_name=render_save_name,
+        double_render=double_render
     )
 
     for metric in mel_metrics:
@@ -169,6 +176,11 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
             render_save_name = f'{renders_prefix}__{step_idx + 1:02d}' \
                                f'__{"_".join(effect_name_seq)}.wav'
 
+        double_render = True
+        if next_effect_name == 'reverb-hall':
+            log.info('Double render for wet audio turned off.')
+            double_render = False
+
         _, wet_audio, wet_af = effect_cnn_audio_step(
             preset_path,
             step_rc_effects,
@@ -177,7 +189,8 @@ def ensemble(init_rc_effects: List[Dict[str, Union[str, List[int]]]],
             engine=engine,
             patch=patch,
             render_save_dir=renders_save_dir,
-            render_save_name=render_save_name
+            render_save_name=render_save_name,
+            double_render=double_render
         )
 
         for metric in mel_metrics:
@@ -262,7 +275,7 @@ if __name__ == '__main__':
     presets = eval_in_data['presets']
     assert len(render_names) == len(presets)
 
-    eval_out_dir = os.path.join(DATA_DIR, 'eval_out')
+    eval_out_dir = os.path.join(DATA_DIR, 'eval_out/ensemble')
     eval_save_name = f'seq_5_v3__mfcc_30__{presets_cat}__ensemble' \
                      f'__{next_effect_architecture}__is_seq_{seq_effects}' \
                      f'__eval_out_data.npz'

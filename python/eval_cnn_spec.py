@@ -62,6 +62,8 @@ if __name__ == '__main__':
     presets = eval_in_data['presets']
 
     eval_out_dir = os.path.join(DATA_DIR, 'eval_out')
+    # eval_out_dir = os.path.join(DATA_DIR, 'eval_out/single_render')
+    # eval_out_dir = os.path.join(DATA_DIR, 'eval_out_old/effect_model_eval_out_old')
     eval_save_name = f'{model_name}__eval_out_data.npz'
     eval_save_path = os.path.join(eval_out_dir, eval_save_name)
     log.info(f'eval_save_path = {eval_save_path}')
