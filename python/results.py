@@ -501,3 +501,244 @@
 # INFO:__main__:n_effects: 5, n = 753, % = 0.99734395750332
 # INFO:__main__:all_results length = 24158
 # INFO:__main__:all_results % = 0.9863399288020531
+
+
+# EvoMUSART RNN Results
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__temporal__rnn__next_effect_rnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.044726308435201645, 'acc': 0.9848911166191101}
+# INFO:__main__:pred.shape = (24158, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 4969, % = 0.97947
+# INFO:__main__:effect_name: distortion , n = 4373, % = 0.97645
+# INFO:__main__:effect_name: eq         , n = 4955, % = 0.97982
+# INFO:__main__:effect_name: phaser     , n = 4947, % = 0.99030
+# INFO:__main__:effect_name: reverb-hall, n = 4914, % = 0.99756
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 24158
+# INFO:__main__:effect_all_results % = 0.98489
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 3361, % = 0.99405
+# INFO:__main__:n_effects: 2, n = 7990, % = 0.98448
+# INFO:__main__:n_effects: 3, n = 7996, % = 0.98299
+# INFO:__main__:n_effects: 4, n = 4008, % = 0.97904
+# INFO:__main__:n_effects: 5, n = 803, % = 0.99875
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 24158
+# INFO:__main__:seq_len_all_results % = 0.98489
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.994 & 0.984 & 0.983 & 0.979 & 0.999 & 0.985
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__temporal__rnn__next_effect_seq_only_rnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.07591500133275986, 'acc': 0.9710654616355896}
+# INFO:__main__:pred.shape = (24158, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 4969, % = 0.97062
+# INFO:__main__:effect_name: distortion , n = 4373, % = 0.96684
+# INFO:__main__:effect_name: eq         , n = 4955, % = 0.98507
+# INFO:__main__:effect_name: phaser     , n = 4947, % = 0.96321
+# INFO:__main__:effect_name: reverb-hall, n = 4914, % = 0.96907
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 24158
+# INFO:__main__:effect_all_results % = 0.97107
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 3361, % = 0.99197
+# INFO:__main__:n_effects: 2, n = 7990, % = 0.97447
+# INFO:__main__:n_effects: 3, n = 7996, % = 0.96061
+# INFO:__main__:n_effects: 4, n = 4008, % = 0.96183
+# INFO:__main__:n_effects: 5, n = 803, % = 1.00000
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 24158
+# INFO:__main__:seq_len_all_results % = 0.97107
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.992 & 0.974 & 0.961 & 0.962 & 1.000 & 0.971
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__temporal__rnn__all_effects_cnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.11370770633220673, 'binary_accuracy': 0.9549914598464966}
+# INFO:__main__:pred.shape = (24158, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 24158, % = 0.96539
+# INFO:__main__:effect_name: distortion , n = 24158, % = 0.97798
+# INFO:__main__:effect_name: eq         , n = 24158, % = 0.88087
+# INFO:__main__:effect_name: phaser     , n = 24158, % = 0.97901
+# INFO:__main__:effect_name: reverb-hall, n = 24158, % = 0.97160
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 120790
+# INFO:__main__:effect_all_results % = 0.95497
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 16805, % = 0.99250
+# INFO:__main__:n_effects: 2, n = 39950, % = 0.97477
+# INFO:__main__:n_effects: 3, n = 39980, % = 0.94555
+# INFO:__main__:n_effects: 4, n = 20040, % = 0.91602
+# INFO:__main__:n_effects: 5, n = 4015, % = 0.88917
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 120790
+# INFO:__main__:seq_len_all_results % = 0.95497
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.993 & 0.975 & 0.946 & 0.916 & 0.889 & 0.955
+
+
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__adv_shapes__rnn__next_effect_rnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.04636402800679207, 'acc': 0.9846020340919495}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 4914, % = 0.96540
+# INFO:__main__:effect_name: distortion , n = 4376, % = 0.98766
+# INFO:__main__:effect_name: eq         , n = 5007, % = 0.98822
+# INFO:__main__:effect_name: phaser     , n = 4931, % = 0.99250
+# INFO:__main__:effect_name: reverb-hall, n = 4931, % = 0.98945
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 24159
+# INFO:__main__:effect_all_results % = 0.98460
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 3365, % = 0.99346
+# INFO:__main__:n_effects: 2, n = 7938, % = 0.98312
+# INFO:__main__:n_effects: 3, n = 7958, % = 0.98077
+# INFO:__main__:n_effects: 4, n = 4097, % = 0.98584
+# INFO:__main__:n_effects: 5, n = 801, % = 0.99376
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 24159
+# INFO:__main__:seq_len_all_results % = 0.98460
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.993 & 0.983 & 0.981 & 0.986 & 0.994 & 0.985
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__adv_shapes__rnn__next_effect_seq_only_rnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.09090328961610794, 'acc': 0.9687901139259338}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 4914, % = 0.96337
+# INFO:__main__:effect_name: distortion , n = 4376, % = 0.96824
+# INFO:__main__:effect_name: eq         , n = 5007, % = 0.97324
+# INFO:__main__:effect_name: phaser     , n = 4931, % = 0.97364
+# INFO:__main__:effect_name: reverb-hall, n = 4931, % = 0.96532
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 24159
+# INFO:__main__:effect_all_results % = 0.96879
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 3365, % = 0.98990
+# INFO:__main__:n_effects: 2, n = 7938, % = 0.96825
+# INFO:__main__:n_effects: 3, n = 7958, % = 0.95866
+# INFO:__main__:n_effects: 4, n = 4097, % = 0.96607
+# INFO:__main__:n_effects: 5, n = 801, % = 1.00000
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 24159
+# INFO:__main__:seq_len_all_results % = 0.96879
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.990 & 0.968 & 0.959 & 0.966 & 1.000 & 0.969
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__adv_shapes__rnn__all_effects_cnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.12265175580978394, 'binary_accuracy': 0.9524088501930237}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 24159, % = 0.95331
+# INFO:__main__:effect_name: distortion , n = 24159, % = 0.97831
+# INFO:__main__:effect_name: eq         , n = 24159, % = 0.89859
+# INFO:__main__:effect_name: phaser     , n = 24159, % = 0.98092
+# INFO:__main__:effect_name: reverb-hall, n = 24159, % = 0.95083
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 120795
+# INFO:__main__:effect_all_results % = 0.95239
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 16825, % = 0.99156
+# INFO:__main__:n_effects: 2, n = 39690, % = 0.96800
+# INFO:__main__:n_effects: 3, n = 39790, % = 0.94076
+# INFO:__main__:n_effects: 4, n = 20485, % = 0.92111
+# INFO:__main__:n_effects: 5, n = 4005, % = 0.90861
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 120795
+# INFO:__main__:seq_len_all_results % = 0.95239
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.992 & 0.968 & 0.941 & 0.921 & 0.909 & 0.952
+
+
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__basic_shapes__rnn__next_effect_rnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.04527899622917175, 'acc': 0.9831532835960388}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 4935, % = 0.98379
+# INFO:__main__:effect_name: distortion , n = 4355, % = 0.96785
+# INFO:__main__:effect_name: eq         , n = 4853, % = 0.97445
+# INFO:__main__:effect_name: phaser     , n = 5077, % = 0.99173
+# INFO:__main__:effect_name: reverb-hall, n = 4939, % = 0.99575
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 24159
+# INFO:__main__:effect_all_results % = 0.98315
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 3326, % = 0.99248
+# INFO:__main__:n_effects: 2, n = 8060, % = 0.98263
+# INFO:__main__:n_effects: 3, n = 7943, % = 0.98250
+# INFO:__main__:n_effects: 4, n = 3956, % = 0.97396
+# INFO:__main__:n_effects: 5, n = 874, % = 1.00000
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 24159
+# INFO:__main__:seq_len_all_results % = 0.98315
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.992 & 0.983 & 0.983 & 0.974 & 1.000 & 0.983
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__basic_shapes__rnn__next_effect_seq_only_rnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.08474721759557724, 'acc': 0.9687073230743408}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 4935, % = 0.96069
+# INFO:__main__:effect_name: distortion , n = 4355, % = 0.94627
+# INFO:__main__:effect_name: eq         , n = 4853, % = 0.97074
+# INFO:__main__:effect_name: phaser     , n = 5077, % = 0.96908
+# INFO:__main__:effect_name: reverb-hall, n = 4939, % = 0.99413
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 24159
+# INFO:__main__:effect_all_results % = 0.96871
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 3326, % = 0.99128
+# INFO:__main__:n_effects: 2, n = 8060, % = 0.96960
+# INFO:__main__:n_effects: 3, n = 7943, % = 0.95380
+# INFO:__main__:n_effects: 4, n = 3956, % = 0.97093
+# INFO:__main__:n_effects: 5, n = 874, % = 1.00000
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 24159
+# INFO:__main__:seq_len_all_results % = 0.96871
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.991 & 0.970 & 0.954 & 0.971 & 1.000 & 0.969
+
+# INFO:__main__:model_name = seq_5_v3__mfcc_30__basic_shapes__rnn__all_effects_cnn__best.h5
+# INFO:__main__:eval_results = {'loss': 0.12926480174064636, 'binary_accuracy': 0.9467304348945618}
+# INFO:__main__:pred.shape = (24159, 5)
+# INFO:__main__:
+# INFO:__main__:effect_results:
+# INFO:__main__:effect_name: compressor , n = 24159, % = 0.95770
+# INFO:__main__:effect_name: distortion , n = 24159, % = 0.93741
+# INFO:__main__:effect_name: eq         , n = 24159, % = 0.86709
+# INFO:__main__:effect_name: phaser     , n = 24159, % = 0.97496
+# INFO:__main__:effect_name: reverb-hall, n = 24159, % = 0.99640
+# INFO:__main__:
+# INFO:__main__:effect_all_results length = 120795
+# INFO:__main__:effect_all_results % = 0.94671
+# INFO:__main__:
+# INFO:__main__:seq_len_results:
+# INFO:__main__:n_effects: 1, n = 16630, % = 0.98978
+# INFO:__main__:n_effects: 2, n = 40300, % = 0.96330
+# INFO:__main__:n_effects: 3, n = 39715, % = 0.93564
+# INFO:__main__:n_effects: 4, n = 19780, % = 0.91269
+# INFO:__main__:n_effects: 5, n = 4370, % = 0.88444
+# INFO:__main__:
+# INFO:__main__:seq_len_all_results length = 120795
+# INFO:__main__:seq_len_all_results % = 0.94671
+# INFO:__main__:
+# INFO:__main__:latex table row = 0.990 & 0.963 & 0.936 & 0.913 & 0.884 & 0.947

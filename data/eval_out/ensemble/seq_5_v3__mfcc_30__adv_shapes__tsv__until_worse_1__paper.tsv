@@ -1,0 +1,26 @@
+next_effect_model                       	mean_d__mse	mean_d__mae	mean_d__lsd	mean_d__mfcc_dist	mean_d__pcc	mean_d__mssmae	points
+
+oracle_fixed_seq__is_seq_True           	      -3.01	      -8.19	      -7.32	           -84.28	      16.24	        -38.09	1
+oracle_random__is_seq_True              	      -2.96	      -8.09	      -7.21	           -83.01	      15.90	        -37.74	15
+
+next_effect_rnn__is_seq_True            	      -2.97	      -8.08	      -7.17	           -83.34	      16.87	        -41.24	1
+next_effect_seq_only_rnn__is_seq_True   	      -2.96	      -7.98	      -7.07	           -81.80	      16.79	        -39.14	7
+all_effects_cnn__is_seq_True            	      -2.92	      -7.84	      -7.05	           -81.21	      15.84	        -38.89	18
+next_effect_seq_only_rnn__is_seq_False  	      -2.93	      -7.79	      -6.94	           -79.68	      16.88	        -38.77	18
+next_effect_rnn__is_seq_False           	      -2.93	      -7.72	      -6.95	           -79.50	      16.17	        -38.79	20
+all_effects_cnn__is_seq_False           	      -2.88	      -7.65	      -6.83	           -78.40	      15.55	        -37.80	33
+oracle_random__is_seq_False             	      -2.74	      -7.35	      -6.55	           -75.56	      15.80	        -39.04	40
+oracle_fixed_seq__is_seq_True           	      -2.84	      -7.62	      -6.76	           -77.92	      15.24	        -37.48	41
+oracle_fixed_seq__is_seq_False          	      -2.85	      -7.57	      -6.72	           -77.31	      14.36	        -36.18	45
+oracle_random__is_seq_True              	      -2.69	      -7.34	      -6.49	           -74.93	      16.12	        -37.58	47
+fixed_seq__is_seq_True                  	      -2.61	      -6.67	      -5.90	           -68.06	      11.89	        -34.04	64
+random__is_seq_True                     	      -2.48	      -6.39	      -5.71	           -65.95	      14.20	        -35.18	67
+fixed_seq__is_seq_False                 	      -2.55	      -6.43	      -5.71	           -65.13	      12.02	        -33.98	69
+random__is_seq_False                    	      -2.34	      -6.03	      -5.42	           -61.86	      14.03	        -33.32	76
+
+oracle_random__is_seq_True              	      -2.96	      -8.09	      -7.21	           -83.01	      15.90	        -37.74	15
+next_effect_rnn__is_seq_True            	      -2.97	      -8.08	      -7.17	           -83.34	      16.87	        -41.24	1
+next_effect_seq_only_rnn__is_seq_True   	      -2.96	      -7.98	      -7.07	           -81.80	      16.79	        -39.14	7
+all_effects_cnn__is_seq_True            	      -2.92	      -7.84	      -7.05	           -81.21	      15.84	        -38.89	18
+random__is_seq_True                     	      -2.48	      -6.39	      -5.71	           -65.95	      14.20	        -35.18	67
+all_effects_cnn__is_seq_False           	      -2.88	      -7.65	      -6.83	           -78.40	      15.55	        -37.80	33

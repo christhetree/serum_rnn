@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 log.setLevel(level=os.environ.get('LOGLEVEL', 'INFO'))
 
 FIXED_EFFECT_SEQ = ['distortion', 'phaser', 'compressor', 'reverb-hall', 'eq']
+X_100_METRICS = {'mse', 'mae', 'pcc', 'mssmae'}
 
 
 def load_effect_cnns(models_dir: str,
@@ -255,6 +256,8 @@ def get_random_rc_effects(
         rc_effects: List[Dict[str, Union[str, List[int]]]],
         min_n_effects: int = 1,
         max_n_effects: int = -1,
+        use_all_effects: bool = False,
+        gran: int = 100
 ) -> List[Dict[str, Union[str, List[int]]]]:
     n_effects = len(rc_effects)
     assert n_effects > 0
@@ -263,12 +266,18 @@ def get_random_rc_effects(
 
     rand_rc_effects = copy.deepcopy(rc_effects)
     n_effects_to_use = np.random.randint(min_n_effects, max_n_effects + 1)
+    if use_all_effects:
+        n_effects_to_use = n_effects
+
     rand_rc_effects = random.sample(rand_rc_effects,
                                     n_effects_to_use)
     for e in rand_rc_effects:
         for desc, params in e.items():
             if desc == 'name':
                 continue
+
+            if not params:
+                params = list(range(0, gran + 1))
             assert len(params) > 0
             e[desc] = [random.choice(params)]
 
@@ -441,6 +450,38 @@ def crunch_eval_data(save_path: str) -> DefaultDict[str,
             log.info('')
         log.info('')
 
+    latex_end_condition = 'until_worse_1'
+    # latex_end_condition = 'all_effects'
+    # latex_end_condition = 'same_steps'
+    log.info(f'latex rows for {latex_end_condition}')
+    log.info('')
+    latex_results = results[latex_end_condition]
+    for metric_name in ['mse', 'mae', 'lsd', 'mfcc_dist', 'pcc', 'mssmae']:
+        mean_init = latex_results['mean_init'][metric_name]
+        mean_end = latex_results['mean_end'][metric_name]
+        mean_d = latex_results['mean_d'][metric_name]
+
+        if metric_name in X_100_METRICS:
+            mean_init *= 100
+            mean_end *= 100
+            mean_d *= 100
+
+        mean_d_per = (mean_d / mean_init) * 100
+
+        row = [f'{metric_name:<9}']
+        row.append(f'{mean_init:>6.2f}')
+        row.append(f'{mean_end:>6.2f}')
+        row.append(f'{mean_d:>6.2f}')
+        row.append(f'{mean_d_per:>6.2f}')
+
+        for idx in range(1, 6):
+            step_d = latex_results[f'step_{idx}'][metric_name]
+            if metric_name in X_100_METRICS:
+                step_d *= 100
+            row.append(f'{step_d:>6.2f}')
+
+        log.info(' & '.join(row))
+
     return results
 
 
@@ -478,9 +519,13 @@ def generate_eval_tsv(eval_out_dir: str,
                     metrics = results[key]
                     for metric_name in metric_names:
                         metric = metrics[metric_name]
+
+                        if metric_name in X_100_METRICS:
+                            metric *= 100
+
                         col_name = f'{key}__{metric_name}'
                         header.append(f'{col_name}')
-                        row.append(f'{metric:>{len(col_name)}.5f}')
+                        row.append(f'{metric:>{len(col_name)}.2f}')
 
                 if not wrote_header:
                     header.append('points')
@@ -591,10 +636,9 @@ if __name__ == '__main__':
     # results_type = 'until_worse_4'
     # results_type = 'until_worse_5'
 
-    metric_names = ['mse', 'mae', 'lsd', 'mfcc_dist', 'pcc', 'mssmae', 'mssmmae']
+    metric_names = ['mse', 'mae', 'lsd', 'mfcc_dist', 'pcc', 'mssmae']
     sort_cols = [f'mean_d__{m}' for m in metric_names]
-    # sort_cols = ['mean_d__mfcc_dist']
-    # sort_cols = ['mean_d__pcc']
+    # sort_cols = ['mean_d__mssmae']
 
     eval_out_dir = os.path.join(DATA_DIR, 'eval_out/ensemble')
     prefix = f'seq_5_v3__mfcc_30__{presets_cat}'

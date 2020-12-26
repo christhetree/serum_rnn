@@ -12,7 +12,7 @@ from audio_processing_util import ProcessConfig
 from audio_rendering import RenderConfig
 from config import PRESETS_DIR, MODELS_DIR, CONFIGS_DIR, OUT_DIR, DATA_DIR
 from eval_util import effect_cnn_audio_step, create_effect_cnn_x, \
-    render_name_to_rc_effects, get_patch_from_effect_cnn
+    render_name_to_rc_effects, get_patch_from_effect_cnn, X_100_METRICS
 from metrics import mae, mse, mfcc_dist, lsd, mssmae, pcc
 from models_effect import baseline_cnn_2x
 from training_util import EFFECT_TO_Y_PARAMS
@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
     model = load_model(model_path)
     model.summary()
+    # exit()
 
     render_config_path = os.path.join(CONFIGS_DIR,
                                       'rendering/seq_5_v3_train.yaml')
@@ -117,15 +118,25 @@ if __name__ == '__main__':
         log.info(f'x_target_mel_mses = {np.mean(x_target_mel_mses):.5f}')
         log.info('')
 
-        for metric_name, dry_v in dry_eval.items():
+        # for metric_name, dry_v in dry_eval.items():
+        for metric_name in ['mse', 'mae', 'lsd', 'mfcc_dist', 'pcc', 'mssmae']:
+            dry_v = dry_eval[metric_name]
             wet_v = wet_eval[metric_name]
             dry_mean = np.mean(dry_v)
             wet_mean = np.mean(wet_v)
-            delta_mean = wet_mean - dry_mean
+            if metric_name in X_100_METRICS:
+                dry_mean *= 100
+                wet_mean *= 100
 
-            log.info(f'{metric_name:<9} dry   = {dry_mean:.5f}')
-            log.info(f'{metric_name:<9} wet   = {wet_mean:.5f}')
-            log.info(f'{metric_name:<9} delta = {delta_mean:.5f}')
+            delta_mean = wet_mean - dry_mean
+            delta_per = (delta_mean / dry_mean) * 100
+
+            # log.info(f'{metric_name:<9} dry   = {dry_mean:.5f}')
+            # log.info(f'{metric_name:<9} wet   = {wet_mean:.5f}')
+            # log.info(f'{metric_name:<9} delta = {delta_mean:.5f}')
+
+            log.info(f'{metric_name:<9} & {dry_mean:>6.2f} & {wet_mean:>6.2f} & {delta_mean:>6.2f} & {delta_per:>6.2f}')
+
     log.info('')
 
     for idx, (mel, mfcc, render_name, base_render_name, preset) in enumerate(

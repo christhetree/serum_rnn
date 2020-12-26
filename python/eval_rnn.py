@@ -4,10 +4,9 @@ from collections import defaultdict
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model
 from tqdm import tqdm
 
-from config import DATASETS_DIR, MODELS_DIR, OUT_DIR
+from config import DATASETS_DIR, MODELS_DIR
 from models_next_effect import next_effect_rnn, next_effect_seq_only_rnn, \
     all_effects_cnn
 from training_rnn import EFFECT_TO_IDX_MAPPING, get_x_ids, RNNDataGenerator
@@ -27,9 +26,9 @@ if physical_devices:
 
 
 if __name__ == '__main__':
-    presets_cat = 'basic_shapes'
+    # presets_cat = 'basic_shapes'
     # presets_cat = 'adv_shapes'
-    # presets_cat = 'temporal'
+    presets_cat = 'temporal'
 
     in_x = 128
     in_y = 88
@@ -83,8 +82,14 @@ if __name__ == '__main__':
                         batch_size=1,
                         shuffle=False)
 
-    model = load_model(model_path)
+    model = architecture(in_x=in_x,
+                         in_y=in_y,
+                         n_mfcc=n_mfcc,
+                         n_channels=n_channels,
+                         n_effects=n_effects)
     model.summary()
+    model.load_weights(model_path)
+    log.info(f'loss = {loss}')
     model.compile(optimizer='adam',
                   loss=loss,
                   metrics=metric)
@@ -146,6 +151,7 @@ if __name__ == '__main__':
     log.info(f'effect_all_results % = {np.mean(effect_all_results):.5f}')
     log.info('')
 
+    latex_table_row = []
     seq_len_all_results = []
     log.info('seq_len_results:')
     for n_effects, correct in sorted(seq_len_results.items()):
@@ -153,9 +159,14 @@ if __name__ == '__main__':
         n = len(correct)
         correct_percent = np.mean(correct)
         log.info(f'n_effects: {n_effects}, n = {n}, % = {correct_percent:.5f}')
+        latex_table_row.append(f'{correct_percent:>5.3f}')
     log.info('')
     log.info(f'seq_len_all_results length = {len(seq_len_all_results)}')
     log.info(f'seq_len_all_results % = {np.mean(seq_len_all_results):.5f}')
+    latex_table_row.append(f'{np.mean(seq_len_all_results):>5.3f}')
+
     assert len(effect_all_results) == len(seq_len_all_results)
     if architecture != all_effects_cnn:
         assert len(effect_all_results) == len(pred)
+    log.info('')
+    log.info(f'latex table row = {" & ".join(latex_table_row)}')
