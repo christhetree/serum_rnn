@@ -1,4 +1,4 @@
-# reverse_synthesis
+# serum_rnn
 
 Code for SerumRNN:
 - https://bit.ly/serum_rnn
